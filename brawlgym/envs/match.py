@@ -27,6 +27,10 @@ except ImportError:                       # pragma: no cover
         _core_import_error = _e
 
 
+# TODO: constants file
+DEFAULT_MAP = "SmallBrawlhaven"   # every match needs a locked map to start
+
+
 class Match:
     """
     Gym style match over a live game instance.
@@ -68,13 +72,13 @@ class Match:
         # team 2: 1,3,5,7
         # None = the engine's default roster.
         self.legends: Optional[List[int]] = self._resolve_legends(legends) if legends else None
-        self.map_name = map_name
+        # A match cannot start without a locked map
+        # map_name=None uses small brawlhaven
+        self.map_name = map_name or DEFAULT_MAP
         self.auto_minimize = bool(auto_minimize)
         self.auto_mute = bool(auto_mute)
-        self.map_info = None
-        if map_name is not None:
-            brawlgym_core.set_map(map_name)
-            self.map_info = brawlgym_core.get_map_geometry(map_name)
+        brawlgym_core.set_map(self.map_name)
+        self.map_info = brawlgym_core.get_map_geometry(self.map_name)
         for comp in (self.obs_builder, self.state_setter):
             if hasattr(comp, "set_map_info"):
                 comp.set_map_info(self.map_info)
