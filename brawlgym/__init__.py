@@ -40,13 +40,13 @@ def make(**kwargs) -> Match:
     return Match(**kwargs)
 
 
-def inject():
+def inject(game_dir=None, refresh=False):
     """
-    Patch the local Brawlhalla install using the hook embedded in brawlgym_core.
-    Run once before launching the game for training.
+    Patch the local Brawlhalla install with the hook built for its exact game build,
+    fetching it if not already cached. Run once before launching the game for training.
     """
-    from .envs.match import brawlgym_core
-    return brawlgym_core.inject()
+    from . import patcher
+    return patcher.inject(game_dir=game_dir, refresh=refresh)
 
 
 def list_maps():
