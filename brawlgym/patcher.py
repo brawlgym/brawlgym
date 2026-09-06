@@ -13,7 +13,9 @@ import urllib.request
 from typing import Optional
 
 PATCH_REPO = "chrisrca/brawlgym-patches"
-PATCH_TAG = "patches"
+TAG_PREFIX = "build-"      # release tag is TAG_PREFIX + the first 12 hex of the sha
+TAG_SHA_LEN = 12
+ASSET_NAME = "hook.bgpatch"
 SWF_NAME = "BrawlhallaAir.swf"
 BACKUP_SUFFIX = ".brawlgym-orig"      # matches brawlgym_core's own backup name
 
@@ -51,7 +53,12 @@ def swf_sha256(path: str) -> str:
 
 
 def patch_url(sha: str) -> str:
-    return f"https://github.com/{PATCH_REPO}/releases/download/{PATCH_TAG}/{sha}.bgpatch"
+    """
+    Deterministic download URL for a build: one release per build, tagged from the hash,
+    so no API lookup is needed to find it.
+    """
+    tag = TAG_PREFIX + sha[:TAG_SHA_LEN]
+    return f"https://github.com/{PATCH_REPO}/releases/download/{tag}/{ASSET_NAME}"
 
 
 def fetch_patch(sha: str, refresh: bool = False) -> str:
