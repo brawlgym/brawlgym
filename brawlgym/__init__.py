@@ -49,6 +49,22 @@ def inject(game_dir=None, refresh=False):
     return patcher.inject(game_dir=game_dir, refresh=refresh)
 
 
+def set_map(name):
+    """
+    Lock the game to one map. Written to disk; takes effect at the next launch.
+    """
+    from .envs.match import brawlgym_core
+    return brawlgym_core.set_map(name)
+
+
+def restore_maps():
+    """
+    Undo set_map and put the pristine map set back.
+    """
+    from .envs.match import brawlgym_core
+    return brawlgym_core.restore_maps()
+
+
 def list_maps():
     """
     [(level_id, level_name)] - every map usable as make(map_name=...).

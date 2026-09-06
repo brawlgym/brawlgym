@@ -77,7 +77,6 @@ class Match:
         self.map_name = map_name or DEFAULT_MAP
         self.auto_minimize = bool(auto_minimize)
         self.auto_mute = bool(auto_mute)
-        brawlgym_core.set_map(self.map_name)
         self.map_info = brawlgym_core.get_map_geometry(self.map_name)
         for comp in (self.obs_builder, self.state_setter):
             if hasattr(comp, "set_map_info"):

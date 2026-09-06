@@ -86,6 +86,7 @@ def launch_instances(n: int = 1,
                      auto_minimize: bool = False,
                      auto_mute: bool = False,
                      args: Optional[List[str]] = None,
+                     map_name: Optional[str] = None,
                      handoff_timeout: float = 90.0) -> List[int]:
     """
     Boot n Brawlhalla instances. Returns the ports [base_port .. base_port+n-1].
@@ -103,6 +104,12 @@ def launch_instances(n: int = 1,
 
     if ensure_gbe:
         gbe.ensure_gbe(game_dir, check_updates=check_gbe_updates)
+
+    # the level set is read at startup, so this has to happen before any instance boots
+    from ..envs.match import DEFAULT_MAP
+    locked = map_name or DEFAULT_MAP
+    brawlgym_core.set_map(locked)
+    print(f"[launch] map set to {locked}")
 
     ports: List[int] = []
     pids: List[int] = []
