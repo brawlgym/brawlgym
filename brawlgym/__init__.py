@@ -30,8 +30,7 @@ from .utils.obs_builders import DefaultObs, ObsBuilder
 from .utils.reward_functions import CombinedReward, ConstantReward, DamageDealtReward, DamageTakenPenalty, KOReward, RewardFunction
 from .utils.state_setters import DefaultStateSetter, RandomStateSetter, StateSetter
 from .utils.terminal_conditions import TeamWipeCondition, TerminalCondition, TimeoutCondition
-
-__version__ = "0.1.0"
+from .version import __version__
 
 
 def make(**kwargs) -> Match:
