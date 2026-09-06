@@ -18,10 +18,13 @@ from ..utils.state_setters import DefaultStateSetter, StateSetter
 from ..utils.terminal_conditions import TeamWipeCondition, TerminalCondition, TimeoutCondition
 
 try:
-    import brawlgym_core   # engine bridge
-except ImportError as _e:  # pragma: no cover
-    brawlgym_core = None
-    _core_import_error = _e
+    from ..core import brawlgym_core      # engine bridge, shipped inside the package
+except ImportError:                       # pragma: no cover
+    try:
+        import brawlgym_core              # dev: built alongside, found on sys.path
+    except ImportError as _e:
+        brawlgym_core = None
+        _core_import_error = _e
 
 
 class Match:
