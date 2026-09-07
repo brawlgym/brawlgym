@@ -1,6 +1,15 @@
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 release_notes = {
+    '0.1.2': """
+    - PlayerData gains attacking, stunned, hits_taken, damage_dealt and damage_taken, read from the
+      game's own fighter flags and running totals.
+    - New rewards: WhiffPenalty, TrueComboReward, ComboReward, TeamDamagePenalty, VelocityReward,
+      AirborneReward, one file each under reward_functions/common_rewards.
+      DamageDealtReward and DamageTakenPenalty use the per-fighter totals, so damage is credited to
+      the fighter who landed it.
+    - The engine's light and heavy input bits were labelled backwards; LIGHT and HEAVY now match the game.
+    """,
     '0.1.1': """
     - Match takes a single game_speed (1 = real time, 2 = double, 0 = uncapped) in place of
       realtime, render_fps and fps. Uncapped stepping is several times faster.

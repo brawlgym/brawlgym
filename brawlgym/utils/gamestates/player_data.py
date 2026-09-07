@@ -15,7 +15,8 @@ class PlayerData:
 
     __slots__ = ("port", "team", "player_id", "x", "y", "vx", "vy", "on_ground",
                  "facing_left", "damage", "dead", "state", "dodge_cooldown",
-                 "dodging", "jumps_used", "held_item", "has_weapon", "raw")
+                 "dodging", "jumps_used", "held_item", "has_weapon", "attacking", "stunned",
+                 "hits_taken", "damage_dealt", "damage_taken", "raw")
 
     def __init__(self, f: Dict[str, Any]):
         self.port: int = int(f.get("port", 0))                              # 1-based port number
@@ -35,4 +36,9 @@ class PlayerData:
         self.jumps_used: int = int(f.get("tjmp", 0))                        # air jumps/recoveries since last grounded
         self.held_item: int = int(f.get("held", common_values.NO_ITEM))     # item id, NO_ITEM if empty-handed
         self.has_weapon: bool = self.held_item != common_values.NO_ITEM
+        self.attacking: bool = int(f.get("atk", 0)) == 1                    # inside an attack animation
+        self.stunned: bool = int(f.get("stn", 0)) == 1                      # in hitstun, inputs are ignored
+        self.hits_taken: int = int(f.get("hit", 0))                         # hits received during the last step
+        self.damage_dealt: float = float(f.get("dlt", 0.0))                 # running total for the match
+        self.damage_taken: float = float(f.get("tkn", 0.0))                 # running total; unlike damage it never resets
         self.raw: Dict[str, Any] = f                                        # full raw dict

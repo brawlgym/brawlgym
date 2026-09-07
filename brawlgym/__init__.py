@@ -29,7 +29,7 @@ from .envs import Match
 from .utils.action_parsers import ActionParser, DefaultAction, LookupAction
 from .utils.gamestates import GameState, ItemData, PlayerData
 from .utils.obs_builders import DefaultObs, ObsBuilder
-from .utils.reward_functions import CombinedReward, ConstantReward, DamageDealtReward, DamageTakenPenalty, KOReward, RewardFunction
+from .utils.reward_functions import AirborneReward, CombinedReward, ComboReward, ConstantReward, DamageDealtReward,     DamageTakenPenalty, KOReward, RewardFunction, TeamDamagePenalty, TrueComboReward, VelocityReward, WhiffPenalty
 from .utils.state_setters import DefaultStateSetter, RandomStateSetter, StateSetter
 from .utils.terminal_conditions import TeamWipeCondition, TerminalCondition, TimeoutCondition
 from .version import __version__

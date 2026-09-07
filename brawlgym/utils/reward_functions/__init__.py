@@ -1,2 +1,3 @@
 from .reward_function import RewardFunction
-from .common_rewards import CombinedReward, ConstantReward, DamageDealtReward, DamageTakenPenalty, KOReward
+from .combined_reward import CombinedReward
+from .common_rewards import *

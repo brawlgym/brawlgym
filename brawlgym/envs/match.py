@@ -14,7 +14,7 @@ from ..utils.action_parsers import ActionParser, DefaultAction, mask_to_buttons
 from ..utils.common_values import DEFAULT_MAP, NATIVE_FPS, UNCAPPED_RENDER_FPS
 from ..utils.gamestates import GameState
 from ..utils.obs_builders import DefaultObs, ObsBuilder
-from ..utils.reward_functions import CombinedReward, DamageDealtReward, KOReward, RewardFunction
+from ..utils.reward_functions import CombinedReward, DamageDealtReward, DamageTakenPenalty, KOReward,     RewardFunction, WhiffPenalty
 from ..utils.state_setters import DefaultStateSetter, StateSetter
 from ..utils.terminal_conditions import TeamWipeCondition, TerminalCondition, TimeoutCondition
 
@@ -68,7 +68,9 @@ class Match:
             terminal_conditions if terminal_conditions is not None
             else [TeamWipeCondition(), TimeoutCondition(1200)])
         self.reward_function = reward_function or CombinedReward(
-            [DamageDealtReward(), KOReward(ko_reward=200.0, death_penalty=200.0)])
+            [DamageDealtReward(), DamageTakenPenalty(), KOReward(ko_reward=100.0, death_penalty=100.0),
+             WhiffPenalty(penalty=5.0)],
+            weights=[1.0, 0.5, 1.0, 1.0])
         self.obs_builder = obs_builder or DefaultObs()
         self.action_parser = action_parser or DefaultAction()
         self.state_setter = state_setter or DefaultStateSetter()
