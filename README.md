@@ -1,9 +1,5 @@
 # The Brawlhalla Gym
 
-> **Alpha not yet usable for training.** This release publishes the public API surface only. The
-> engine bridge (`brawlgym_core`) is not published yet, so `brawlgym.make()` raises an
-> ImportError.
-
 This is a python API that can be used to treat the game [Brawlhalla](https://www.brawlhalla.com) as
 though it were an [OpenAI Gym](https://gym.openai.com)-style environment for Reinforcement Learning
 projects. It is heavily inspired by [RLGym](https://rlgym.org/), and the component model will be
