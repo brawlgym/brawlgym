@@ -29,8 +29,8 @@ except ImportError:                       # pragma: no cover
 
 # TODO: constants file
 DEFAULT_MAP = "SmallBrawlhaven"   # every match needs a locked map to start
-DEFAULT_TURBO_FPS = 30.0          # render-frame rate used when realtime=False; steps run between
-                                  # frames, so a low rate leaves the most room for them
+NATIVE_FPS = 60.0                 # native sim rate
+UNCAPPED_RENDER_FPS = 30.0        # render rate when game_speed=0; steps run between frames, so a low rate leaves the most room for them
 
 
 class Match:
@@ -39,18 +39,16 @@ class Match:
     """
 
     def __init__(self,
-                 obs_builder: Optional[ObsBuilder] = None,
-                 reward_function: Optional[RewardFunction] = None,
+                 game_speed: float = 0,  # 0: uncapped, 1: real time, >1: multiple of real time
+                 tick_skip: int = 8,
+                 n_players: int = 2,
+                 map_name: Optional[str] = None,
+                 legends: Optional[Sequence[Any]] = None,
                  terminal_conditions: Optional[Sequence[TerminalCondition]] = None,
+                 reward_function: Optional[RewardFunction] = None,
+                 obs_builder: Optional[ObsBuilder] = None,
                  action_parser: Optional[ActionParser] = None,
                  state_setter: Optional[StateSetter] = None,
-                 tick_skip: int = 8,
-                 realtime: bool = False,
-                 render_fps: Optional[float] = None,
-                 fps: float = 60.0,
-                 n_players: int = 2,
-                 legends: Optional[Sequence[Any]] = None,
-                 map_name: Optional[str] = None,
                  auto_minimize: bool = False,
                  auto_mute: bool = False,
                  host: str = "127.0.0.1",
@@ -58,36 +56,40 @@ class Match:
         if brawlgym_core is None:
             raise ImportError(
                 "brawlgym requires the brawlgym_core engine module; install it and ensure it is importable") from _core_import_error
-        self.obs_builder = obs_builder or DefaultObs()
-        self.reward_function = reward_function or CombinedReward(
-            [DamageDealtReward(), KOReward(ko_reward=200.0, death_penalty=200.0)])
-        self.terminal_conditions: List[TerminalCondition] = list(
-            terminal_conditions if terminal_conditions is not None
-            else [TeamWipeCondition(), TimeoutCondition(1200)])
-        self.action_parser = action_parser or DefaultAction()
-        self.state_setter = state_setter or DefaultStateSetter()
+        if game_speed < 0:
+            raise ValueError("game_speed must be 0 (uncapped) or a positive multiple of real time")
+        self.game_speed = float(game_speed)
         self.tick_skip = int(tick_skip)
-        self.realtime = bool(realtime)
-        self.render_fps = render_fps
-        self.fps = float(fps)   # native sim rate for wall-clock pacing
         self.n_players = int(n_players)
+        # A match cannot start without a locked map
+        # map_name=None uses small brawlhaven
+        self.map_name = map_name or DEFAULT_MAP
         # per-slot legends (HeroIDs or names)
         # team 1: 0,2,4,6
         # team 2: 1,3,5,7
         # None = the engine's default roster.
         self.legends: Optional[List[int]] = self._resolve_legends(legends) if legends else None
-        # A match cannot start without a locked map
-        # map_name=None uses small brawlhaven
-        self.map_name = map_name or DEFAULT_MAP
+        self.terminal_conditions: List[TerminalCondition] = list(
+            terminal_conditions if terminal_conditions is not None
+            else [TeamWipeCondition(), TimeoutCondition(1200)])
+        self.reward_function = reward_function or CombinedReward(
+            [DamageDealtReward(), KOReward(ko_reward=200.0, death_penalty=200.0)])
+        self.obs_builder = obs_builder or DefaultObs()
+        self.action_parser = action_parser or DefaultAction()
+        self.state_setter = state_setter or DefaultStateSetter()
         self.auto_minimize = bool(auto_minimize)
         self.auto_mute = bool(auto_mute)
         self.map_info = brawlgym_core.get_map_geometry(self.map_name)
         for comp in (self.obs_builder, self.state_setter):
             if hasattr(comp, "set_map_info"):
                 comp.set_map_info(self.map_info)
-        # NOTE: the engine's internal `framems` stays at 25ms regardless of fps - it is the
+        # NOTE: the engine's internal `framems` stays at 25ms regardless of speed - it is the
         # forced-step owed-time, chosen so exactly ONE 60fps frame runs per step (floor math
         # needs it in [16.7, 33.3)); it does not affect game speed.
+
+        # wall-clock period of one step for a capped speed; 0 = step as fast as the game answers
+        self._step_period = self.tick_skip / NATIVE_FPS / self.game_speed if self.game_speed else 0.0
+        self._next_step_time: Optional[float] = None
 
         self._bridge = brawlgym_core.HookBridge(host, port)
         self._state: Optional[GameState] = None
@@ -131,19 +133,12 @@ class Match:
         if self.legends:
             self._bridge.set_legends(self.legends)
         st = self._wait_for_match(timeout)
-        if self.realtime:
-            self._bridge.configure(1, 25.0)     # 1x speed, rendered (native 60fps free-run)
-        else:
-            self._bridge.configure(max(16, self.tick_skip * 2), 25.0)
-        target = self.render_fps
-        if target is None and not self.realtime:
-            target = DEFAULT_TURBO_FPS
-        if target:
-            self._bridge.set_render_fps(float(target))
-            print("[brawlgym] render fps -> %g" % target, flush=True)
+        self._bridge.configure(max(16, self.tick_skip * 2), 25.0)
+        self._bridge.set_render_fps(UNCAPPED_RENDER_FPS if self.game_speed == 0 else NATIVE_FPS)
         self._bridge.set_sitout(True)           # deaths sit out until reset()
         self._state = st
-        print("[brawlgym] match up: %d fighters" % len(st.players), flush=True)
+        speed = "uncapped" if self.game_speed == 0 else "%gx" % self.game_speed
+        print("[brawlgym] match up: %d fighters, game speed %s" % (len(st.players), speed), flush=True)
         from ..gamelaunch import window         # matches by window title / process name (single instance)
         if self.auto_minimize:
             window.minimize_title("Brawlhalla")
@@ -191,6 +186,7 @@ class Match:
         st = GameState(self._bridge.reset(positions))
         self._state = st
         self._prev_actions = None
+        self._next_step_time = None
         self.obs_builder.reset(st)
         self.reward_function.reset(st)
         for tc in self.terminal_conditions:
@@ -199,12 +195,28 @@ class Match:
         zero_act = [0.0] * self.action_parser.get_action_space_size()
         return [self.obs_builder.build_obs(p, st, zero_act) for p in st.players]
 
+    def _pace(self) -> None:
+        """
+        Hold the step schedule for a capped game_speed.
+        """
+        if not self._step_period:
+            return
+        now = time.perf_counter()
+        # (re)anchor the schedule at the first step and after any stall longer than a step
+        if self._next_step_time is None or now - self._next_step_time > self._step_period:
+            self._next_step_time = now
+        self._next_step_time += self._step_period
+        delay = self._next_step_time - now
+        if delay > 0:
+            time.sleep(delay)
+
     def step(self, actions: Sequence[Any]):
         """
         Advance tick_skip frames with the given per-agent actions.
 
         Returns (observations, rewards, terminated, game_state).
         """
+        self._pace()
         masks = self.action_parser.parse_actions(actions, self._state)
         st = GameState(self._bridge.step(masks, self.tick_skip))
         self._state = st
