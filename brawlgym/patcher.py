@@ -61,6 +61,29 @@ def patch_url(sha: str) -> str:
     return f"https://github.com/{PATCH_REPO}/releases/download/{tag}/{ASSET_NAME}"
 
 
+def _remote_changed(sha: str, cached: str):
+    """
+    Check if cache is stale. If a release breaks the hook and a fix is published, 
+    the new release will have a different size or etag.
+    """
+    try:
+        req = urllib.request.Request(patch_url(sha), method="HEAD", headers={"User-Agent": "brawlgym"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            size = r.headers.get("Content-Length")
+            etag = r.headers.get("ETag", "")
+    except Exception:
+        return False, "offline"
+    if size and int(size) != os.path.getsize(cached):
+        return True, f"size {os.path.getsize(cached)} -> {size}"
+    try:
+        with open(cached + ".etag", encoding="utf-8") as f:
+            if etag and f.read().strip() != etag:
+                return True, "etag"
+    except OSError:
+        pass
+    return False, "unchanged"
+
+
 def fetch_patch(sha: str, refresh: bool = False) -> str:
     """
     Download <sha>.bgpatch into the local cache and return its path. Cached after the first call,
@@ -68,13 +91,17 @@ def fetch_patch(sha: str, refresh: bool = False) -> str:
     """
     dst = os.path.join(_cache_dir(), f"{sha}.bgpatch")
     if os.path.exists(dst) and not refresh:
-        return dst
+        changed, why = _remote_changed(sha, dst)
+        if not changed:
+            return dst
+        print(f"[patch] cached {sha[:12]}.bgpatch is stale ({why}) - refetching")
 
     req = urllib.request.Request(patch_url(sha), headers={"User-Agent": "brawlgym"})
     print(f"[patch] fetching {sha[:12]}.bgpatch ...")
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
             blob = r.read()
+            etag = r.headers.get("ETag", "")
     except urllib.error.HTTPError as e:
         if e.code == 404:
             raise RuntimeError(
@@ -87,6 +114,9 @@ def fetch_patch(sha: str, refresh: bool = False) -> str:
     with open(tmp, "wb") as f:
         f.write(blob)
     os.replace(tmp, dst)
+    if etag:
+        with open(dst + ".etag", "w", encoding="utf-8") as f:
+            f.write(etag)
     print(f"[patch] cached -> {dst} ({len(blob)} bytes)")
     return dst
 
