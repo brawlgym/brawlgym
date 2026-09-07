@@ -20,11 +20,11 @@ Package layout:
     brawlgym.utils.obs_builders         ObsBuilder, DefaultObs
     brawlgym.utils.reward_functions     RewardFunction, common rewards
     brawlgym.utils.terminal_conditions  TerminalCondition, TeamWipe/Timeout
-    brawlgym.utils.action_parsers       ActionParser, DefaultAction
+    brawlgym.utils.action_parsers       ActionParser, DefaultAction, LookupAction
     brawlgym.utils.state_setters        StateSetter, Default/Random
 """
 from .envs import Match
-from .utils.action_parsers import ActionParser, DefaultAction
+from .utils.action_parsers import ActionParser, DefaultAction, LookupAction
 from .utils.gamestates import GameState, ItemData, PlayerData
 from .utils.obs_builders import DefaultObs, ObsBuilder
 from .utils.reward_functions import CombinedReward, ConstantReward, DamageDealtReward, DamageTakenPenalty, KOReward, RewardFunction
