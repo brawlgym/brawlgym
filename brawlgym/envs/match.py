@@ -29,6 +29,7 @@ except ImportError:                       # pragma: no cover
 
 # TODO: constants file
 DEFAULT_MAP = "SmallBrawlhaven"   # every match needs a locked map to start
+DEFAULT_TURBO_FPS = 300.0         # render-frame rate used when realtime=False
 
 
 class Match:
@@ -44,6 +45,7 @@ class Match:
                  state_setter: Optional[StateSetter] = None,
                  tick_skip: int = 8,
                  realtime: bool = False,
+                 render_fps: Optional[float] = None,
                  fps: float = 60.0,
                  n_players: int = 2,
                  legends: Optional[Sequence[Any]] = None,
@@ -65,6 +67,7 @@ class Match:
         self.state_setter = state_setter or DefaultStateSetter()
         self.tick_skip = int(tick_skip)
         self.realtime = bool(realtime)
+        self.render_fps = render_fps
         self.fps = float(fps)   # native sim rate for wall-clock pacing
         self.n_players = int(n_players)
         # per-slot legends (HeroIDs or names)
@@ -130,7 +133,13 @@ class Match:
         if self.realtime:
             self._bridge.configure(1, 25.0)     # 1x speed, rendered (native 60fps free-run)
         else:
-            self._bridge.configure(max(16, self.tick_skip * 2), 25.0)  # turbo TODO: fixme
+            self._bridge.configure(max(16, self.tick_skip * 2), 25.0)
+        target = self.render_fps
+        if target is None and not self.realtime:
+            target = DEFAULT_TURBO_FPS
+        if target:
+            self._bridge.set_render_fps(float(target))
+            print("[brawlgym] render fps -> %g" % target, flush=True)
         self._bridge.set_sitout(True)           # deaths sit out until reset()
         self._state = st
         print("[brawlgym] match up: %d fighters" % len(st.players), flush=True)
