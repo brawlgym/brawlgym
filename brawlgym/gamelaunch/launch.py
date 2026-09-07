@@ -132,28 +132,31 @@ def launch_instances(n: int = 1,
     return ports
 
 
-def _apply_window_prefs(pids, minimize, mute, tries=6, gap=2.0):
+def _apply_window_prefs(pids, minimize, mute, timeout=180.0, gap=2.0):
     """
     Minimize and ALWAYS set the mute state to mute for each game.
+
+    Windows and audio sessions appear some seconds after launch, so keep polling until every
+    instance has been handled or the timeout passes.
     """
     from . import window
     import time
     have_pycaw = window.pycaw_available()
     if not have_pycaw and mute:
         print("[launch] pycaw not installed - cannot mute (pip install pycaw)")
-    manage_mute = have_pycaw          # when pycaw is present we always enforce the desired state
-    need_min = minimize
-    pending = set(pids) if manage_mute else set()
-    for _ in range(tries):
-        if need_min and window.minimize_pids(pids) >= len(pids):
-            need_min = False
-        for p in list(pending):
-            if window.mute_pids([p], mute=mute):   # session found -> state set
-                pending.discard(p)
-        if not need_min and not pending:
-            break
-        time.sleep(gap)
+    need_min = set(pids) if minimize else set()
+    need_mute = set(pids) if have_pycaw else set()   # when pycaw is present we always enforce the desired state
+    t_end = time.time() + timeout
+    while (need_min or need_mute) and time.time() < t_end:
+        for p in list(need_min):
+            if window.minimize_pids([p]):
+                need_min.discard(p)
+        for p in list(need_mute):
+            if window.mute_pids([p], mute=mute):     # session found -> state set
+                need_mute.discard(p)
+        if need_min or need_mute:
+            time.sleep(gap)
     if minimize:
-        print("[launch] minimized instance windows")
-    if manage_mute and mute:
-        print(f"[launch] muted {len(pids) - len(pending)}/{len(pids)} instance(s)")
+        print(f"[launch] minimized {len(pids) - len(need_min)}/{len(pids)} instance window(s)")
+    if have_pycaw and mute:
+        print(f"[launch] muted {len(pids) - len(need_mute)}/{len(pids)} instance(s)")
