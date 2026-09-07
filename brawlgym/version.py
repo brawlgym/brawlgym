@@ -1,6 +1,10 @@
-__version__ = '0.1.0a1'
+__version__ = '0.1.0'
 
 release_notes = {
+    '0.1.0': """
+    - First usable release: the engine bridge ships inside the package, brawlgym.inject() patches
+      the game, and LookupAction is available for discrete policies.
+    """,
     '0.1.0a1': """
     - Initial alpha release. The public API surface only: Match/make(), obs builders, reward
       functions, terminal conditions, action parsers, state setters, and the game launcher.
