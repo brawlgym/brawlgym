@@ -29,7 +29,8 @@ except ImportError:                       # pragma: no cover
 
 # TODO: constants file
 DEFAULT_MAP = "SmallBrawlhaven"   # every match needs a locked map to start
-DEFAULT_TURBO_FPS = 300.0         # render-frame rate used when realtime=False
+DEFAULT_TURBO_FPS = 30.0          # render-frame rate used when realtime=False; steps run between
+                                  # frames, so a low rate leaves the most room for them
 
 
 class Match:
