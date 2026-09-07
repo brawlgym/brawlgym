@@ -10,7 +10,8 @@ from __future__ import annotations
 import time
 from typing import Any, List, Optional, Sequence
 
-from ..utils.action_parsers import ActionParser, DefaultAction
+from ..utils.action_parsers import ActionParser, DefaultAction, mask_to_buttons
+from ..utils.common_values import DEFAULT_MAP, NATIVE_FPS, UNCAPPED_RENDER_FPS
 from ..utils.gamestates import GameState
 from ..utils.obs_builders import DefaultObs, ObsBuilder
 from ..utils.reward_functions import CombinedReward, DamageDealtReward, KOReward, RewardFunction
@@ -25,12 +26,6 @@ except ImportError:                       # pragma: no cover
     except ImportError as _e:
         brawlgym_core = None
         _core_import_error = _e
-
-
-# TODO: constants file
-DEFAULT_MAP = "SmallBrawlhaven"   # every match needs a locked map to start
-NATIVE_FPS = 60.0                 # native sim rate
-UNCAPPED_RENDER_FPS = 30.0        # render rate when game_speed=0; steps run between frames, so a low rate leaves the most room for them
 
 
 class Match:
@@ -191,9 +186,9 @@ class Match:
         self.reward_function.reset(st)
         for tc in self.terminal_conditions:
             tc.reset(st)
-        # noop previous action
-        zero_act = [0.0] * self.action_parser.get_action_space_size()
-        return [self.obs_builder.build_obs(p, st, zero_act) for p in st.players]
+        # no buttons pressed yet
+        no_buttons = mask_to_buttons(0)
+        return [self.obs_builder.build_obs(p, st, no_buttons) for p in st.players]
 
     def _pace(self) -> None:
         """
@@ -214,15 +209,18 @@ class Match:
         """
         Advance tick_skip frames with the given per-agent actions.
 
-        Returns (observations, rewards, terminated, game_state).
+        Returns (observations, rewards, terminated, game_state). Obs builders and reward
+        functions receive each fighter's previous action as the buttons that were pressed
+        (one 0/1 per BUTTON_BITS entry), whatever the action parser's own format.
         """
         self._pace()
         masks = self.action_parser.parse_actions(actions, self._state)
         st = GameState(self._bridge.step(masks, self.tick_skip))
         self._state = st
         self._prev_actions = actions
-        obs = [self.obs_builder.build_obs(p, st, a) for p, a in zip(st.players, actions)]
-        rewards = [self.reward_function.get_reward(p, st, a)
-                   for p, a in zip(st.players, actions)]
+        buttons = [mask_to_buttons(m) for m in masks]
+        obs = [self.obs_builder.build_obs(p, st, b) for p, b in zip(st.players, buttons)]
+        rewards = [self.reward_function.get_reward(p, st, b)
+                   for p, b in zip(st.players, buttons)]
         terminated = any(tc.is_terminal(st) for tc in self.terminal_conditions)
         return obs, rewards, terminated, st

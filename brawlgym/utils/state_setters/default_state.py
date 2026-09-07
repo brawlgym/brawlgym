@@ -7,15 +7,7 @@ import random
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
 
-Position = Tuple[float, float]
-
-# TODO: constants file
-# default (small brawlhaven) stage reference values - conservative bounds, safely on the floor
-GROUND_Y = 1849.0
-STAGE_X_MIN, STAGE_X_MAX = 600.0, 2150.0
-
-
-from .state_setter import StateSetter
+from .state_setter import Position, StateSetter
 
 
 class DefaultStateSetter(StateSetter):

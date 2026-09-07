@@ -22,6 +22,8 @@ Package layout:
     brawlgym.utils.terminal_conditions  TerminalCondition, TeamWipe/Timeout
     brawlgym.utils.action_parsers       ActionParser, DefaultAction, LookupAction
     brawlgym.utils.state_setters        StateSetter, Default/Random
+    brawlgym.utils.common_values        game constants and observation scales
+    brawlgym.utils.math                 2D helpers (raycast)
 """
 from .envs import Match
 from .utils.action_parsers import ActionParser, DefaultAction, LookupAction

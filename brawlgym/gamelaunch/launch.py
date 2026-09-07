@@ -106,7 +106,7 @@ def launch_instances(n: int = 1,
         gbe.ensure_gbe(game_dir, check_updates=check_gbe_updates)
 
     # the level set is read at startup, so this has to happen before any instance boots
-    from ..envs.match import DEFAULT_MAP
+    from ..utils.common_values import DEFAULT_MAP
     locked = map_name or DEFAULT_MAP
     brawlgym_core.set_map(locked)
     print(f"[launch] map set to {locked}")

@@ -9,8 +9,9 @@ from typing import Any, List, Optional, Sequence
 
 import numpy as np
 
+from ..common_values import DODGE, DOWN, HEAVY, JUMP, LEFT, LIGHT, RIGHT
 from ..gamestates import GameState
-from .action_parser import ActionParser, DOWN, DODGE, HEAVY, JUMP, LEFT, LIGHT, RIGHT
+from .action_parser import ActionParser
 
 
 class LookupAction(ActionParser):

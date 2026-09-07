@@ -10,12 +10,15 @@ from typing import Any, List, Sequence
 
 import numpy as np
 
+from ..common_values import BUTTON_BITS, DODGE, DOWN, HEAVY, JUMP, LEFT, LIGHT, RIGHT, THROW, UP
 from ..gamestates import GameState
 
-# input bits (engine-level)
-# TODO: more research should be done on the exact semantics of these bits and how they interact with each other
-UP, DOWN, LEFT, RIGHT = 1, 2, 4, 8
-JUMP, LIGHT, HEAVY, DODGE, THROW = 16, 64, 128, 256, 512
+
+def mask_to_buttons(mask: int) -> np.ndarray:
+    """
+    Engine input mask -> one 0/1 entry per button, in BUTTON_BITS order.
+    """
+    return np.array([1.0 if mask & bit else 0.0 for bit in BUTTON_BITS], dtype=np.float32)
 
 
 class ActionParser(ABC):

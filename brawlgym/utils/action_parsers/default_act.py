@@ -6,18 +6,12 @@ edge semantics (a held button re-triggers exactly like a human re-pressing it wo
 """
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from typing import Any, List, Sequence
 
 import numpy as np
 
+from ..common_values import DODGE, DOWN, HEAVY, JUMP, LEFT, LIGHT, RIGHT, UP
 from ..gamestates import GameState
-
-# input bits (engine-level)
-UP, DOWN, LEFT, RIGHT = 1, 2, 4, 8
-JUMP, LIGHT, HEAVY, DODGE, THROW = 16, 64, 128, 256, 512
-
-
 from .action_parser import ActionParser
 
 
