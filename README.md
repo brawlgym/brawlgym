@@ -9,7 +9,7 @@ familiar if you have used it.
 * A Windows 10 or 11 PC
 * Brawlhalla (Steam)
 * Python 3.9 or newer
-* `brawlgym_core`, the engine bridge — **not yet available**
+* `brawlgym_core`, the engine bridge
 
 ## Installation
 Install the library via pip:
