@@ -11,7 +11,7 @@ import numpy as np
 
 from ..common_values import DODGE, DOWN, HEAVY, JUMP, LEFT, LIGHT, RIGHT
 from ..gamestates import GameState
-from .action_parser import ActionParser
+from .action_parser import ActionParser, mask_to_name
 
 
 class LookupAction(ActionParser):
@@ -49,6 +49,10 @@ class LookupAction(ActionParser):
     @property
     def n_actions(self) -> int:
         return len(self.table)
+
+    @property
+    def action_names(self) -> List[str]:
+        return [mask_to_name(m) for m in self.table]
 
     def get_action_space_size(self) -> int:
         return 1

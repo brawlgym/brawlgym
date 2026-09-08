@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -25,6 +25,8 @@ class CombinedReward(RewardFunction):
         if len(self.reward_functions) != len(self.reward_weights):
             raise ValueError("Reward functions list length ({0}) and reward weights length ({1}) must be equal"
                              .format(len(self.reward_functions), len(self.reward_weights)))
+        # unweighted per-component rewards from the latest get_reward call by player port
+        self.last_rewards: Dict[int, List[float]] = {}
 
     @classmethod
     def from_zipped(cls, *rewards_and_weights: Union[RewardFunction, Tuple[RewardFunction, float]]) -> "CombinedReward":
@@ -48,4 +50,5 @@ class CombinedReward(RewardFunction):
 
     def get_reward(self, player: PlayerData, state: GameState, previous_action: np.ndarray) -> float:
         rewards = [func.get_reward(player, state, previous_action) for func in self.reward_functions]
+        self.last_rewards[player.port] = rewards
         return float(np.dot(self.reward_weights, rewards))

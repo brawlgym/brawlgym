@@ -15,6 +15,7 @@ UNCAPPED_RENDER_FPS = 30.0
 UP, DOWN, LEFT, RIGHT = 1, 2, 4, 8
 JUMP, HEAVY, LIGHT, DODGE, THROW = 16, 64, 128, 256, 512
 BUTTON_BITS = (UP, DOWN, LEFT, RIGHT, JUMP, LIGHT, HEAVY, DODGE, THROW)
+BUTTON_NAMES = ("up", "down", "left", "right", "jump", "light", "heavy", "dodge", "throw")
 NUM_BUTTONS = len(BUTTON_BITS)
 
 # team ids as reported by the engine

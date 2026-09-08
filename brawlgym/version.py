@@ -4,8 +4,8 @@ release_notes = {
     '0.1.2': """
     - PlayerData gains attacking, stunned, hits_taken, damage_dealt and damage_taken, read from the
       game's own fighter flags and running totals.
-    - New rewards: WhiffPenalty, TrueComboReward, ComboReward, TeamDamagePenalty, VelocityReward,
-      AirborneReward, one file each under reward_functions/common_rewards.
+    - New rewards: WhiffPenalty, ComboReward, TeamDamagePenalty, VelocityReward, GroundedPenalty, one
+      file each under reward_functions/common_rewards.
       DamageDealtReward and DamageTakenPenalty use the per-fighter totals, so damage is credited to
       the fighter who landed it.
     - The engine's light and heavy input bits were labelled backwards; LIGHT and HEAVY now match the game.

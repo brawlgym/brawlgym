@@ -10,7 +10,7 @@ from typing import Any, List, Sequence
 
 import numpy as np
 
-from ..common_values import BUTTON_BITS, DODGE, DOWN, HEAVY, JUMP, LEFT, LIGHT, RIGHT, THROW, UP
+from ..common_values import BUTTON_BITS, BUTTON_NAMES, DODGE, DOWN, HEAVY, JUMP, LEFT, LIGHT, RIGHT, THROW, UP
 from ..gamestates import GameState
 
 
@@ -19,6 +19,13 @@ def mask_to_buttons(mask: int) -> np.ndarray:
     Engine input mask -> one 0/1 entry per button, in BUTTON_BITS order.
     """
     return np.array([1.0 if mask & bit else 0.0 for bit in BUTTON_BITS], dtype=np.float32)
+
+
+def mask_to_name(mask: int) -> str:
+    """
+    Engine input mask -> "left+light" style name ("idle" for no buttons).
+    """
+    return "+".join(n for n, bit in zip(BUTTON_NAMES, BUTTON_BITS) if mask & bit) or "idle"
 
 
 class ActionParser(ABC):
