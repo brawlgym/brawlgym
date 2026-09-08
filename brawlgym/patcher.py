@@ -12,7 +12,7 @@ import urllib.error
 import urllib.request
 from typing import Optional
 
-PATCH_REPO = "chrisrca/brawlgym-patches"
+PATCH_REPO = "brawlgym/brawlgym-patches"
 TAG_PREFIX = "build-"      # release tag is TAG_PREFIX + the first 12 hex of the sha
 TAG_SHA_LEN = 12
 ASSET_NAME = "hook.bgpatch"

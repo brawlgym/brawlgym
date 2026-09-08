@@ -25,7 +25,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='chrisrca',
-    url='https://github.com/chrisrca/brawlgym',
+    url='https://github.com/brawlgym/brawlgym',
     install_requires=[
         'numpy>=1.19',
         'py7zr>=0.20',
