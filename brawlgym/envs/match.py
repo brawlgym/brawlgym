@@ -70,7 +70,7 @@ class Match:
         self.reward_function = reward_function or CombinedReward(
             [DamageDealtReward(), DamageTakenPenalty(), KOReward(ko_reward=100.0, death_penalty=100.0),
              WhiffPenalty(penalty=5.0)],
-            weights=[1.0, 0.5, 1.0, 1.0])
+            reward_weights=[1.0, 0.5, 1.0, 1.0])
         self.obs_builder = obs_builder or DefaultObs()
         self.action_parser = action_parser or DefaultAction()
         self.state_setter = state_setter or DefaultStateSetter()
