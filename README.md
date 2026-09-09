@@ -5,6 +5,8 @@ though it were an [OpenAI Gym](https://gym.openai.com)-style environment for Rei
 projects. It is heavily inspired by [RLGym](https://rlgym.org/), and the component model will be
 familiar if you have used it.
 
+<video src="https://github.com/user-attachments/assets/a7d81157-f03d-47d8-91f1-5a2bf6a597ef" controls autoplay loop muted playsinline></video>
+
 ## Requirements
 * A Windows 10 or 11 PC
 * Brawlhalla (Steam)
