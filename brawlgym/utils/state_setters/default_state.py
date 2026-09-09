@@ -3,9 +3,7 @@ State setters: choose where every fighter starts each episode.
 """
 from __future__ import annotations
 
-import random
-from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
+from typing import List
 
 from .state_setter import Position, StateSetter
 

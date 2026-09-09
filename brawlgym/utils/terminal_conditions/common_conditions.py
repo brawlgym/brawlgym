@@ -3,8 +3,6 @@ Terminal conditions: decide when an episode ends.
 """
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-
 from ..gamestates import GameState
 
 
