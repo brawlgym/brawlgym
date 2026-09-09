@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Any, Dict
 
 from .. import common_values
-from ..legends import legend_name, legend_weapons
+from ..legends import hero_id_for, legend_name, legend_weapons
 
 
 class PlayerData:
@@ -17,7 +17,7 @@ class PlayerData:
     __slots__ = ("port", "team", "player_id", "x", "y", "vx", "vy", "on_ground",
                  "facing_left", "damage", "dead", "state", "dodge_cooldown",
                  "dodging", "jumps_used", "held_item", "has_weapon", "attacking", "stunned",
-                 "hits_taken", "damage_dealt", "damage_taken", "hero_id", "raw")
+                 "hits_taken", "damage_dealt", "damage_taken", "hero_name", "hero_id", "raw")
 
     def __init__(self, f: Dict[str, Any]):
         self.port: int = int(f.get("port", 0))                              # 1-based port number
@@ -42,7 +42,8 @@ class PlayerData:
         self.hits_taken: int = int(f.get("hit", 0))                         # hits received during the last step
         self.damage_dealt: float = float(f.get("dlt", 0.0))                 # running total for the match
         self.damage_taken: float = float(f.get("tkn", 0.0))                 # running total; unlike damage it never resets
-        self.hero_id: int = int(f.get("hero", -1))                          # which legend this is
+        self.hero_name: str = str(f.get("hero", ""))                        # the game's HeroName
+        self.hero_id: int = hero_id_for(self.hero_name)                     # which legend this is
         self.raw: Dict[str, Any] = f                                        # full raw dict
 
     @property

@@ -81,6 +81,15 @@ LEGENDS: Dict[int, Tuple[str, str, str, str]] = {
 # stable order for one-hot encoding a fighter's legend
 LEGEND_IDS: List[int] = sorted(LEGENDS)
 LEGEND_INDEX: Dict[int, int] = {hid: i for i, hid in enumerate(LEGEND_IDS)}
+# the game reports a fighter's legend by HeroName, which is what maps back to the rest of this table
+LEGEND_BY_NAME: Dict[str, int] = {row[0]: hid for hid, row in LEGENDS.items()}
+
+
+def hero_id_for(hero_name: str) -> int:
+    """
+    HeroID for a HeroName as the game reports it ("Viking"), or -1 if unknown.
+    """
+    return LEGEND_BY_NAME.get(hero_name, -1)
 
 
 def legend_weapons(hero_id: int) -> Tuple[str, ...]:

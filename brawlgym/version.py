@@ -15,7 +15,7 @@ release_notes = {
       (see ArmedStateSetter, which can arm fighters at random by legend). give_item hands the item
       over the way the game does on a pickup, so it is instant and works in mid-air; it refuses a
       weapon the legend cannot use unless force=True.
-    - PlayerData reports hero_id, legend and weapons, and DefaultObs one-hots the legend. The full
+    - PlayerData reports hero_name, hero_id, legend and weapons, and DefaultObs one-hots the legend. The full
       legend table is in utils.legends (regenerate with brawlgym-core/demos/dump_legends.py).
     """,
     '0.1.1': """
