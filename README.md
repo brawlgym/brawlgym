@@ -20,4 +20,4 @@ pip install brawlgym
 ```
 
 ## Usage
-Wiki coming soon...
+Wiki coming soon... Check out [brawlgym-ppo](https://github.com/brawlgym/brawlgym-ppo) in the meantime!
