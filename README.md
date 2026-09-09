@@ -5,7 +5,7 @@ though it were an [OpenAI Gym](https://gym.openai.com)-style environment for Rei
 projects. It is heavily inspired by [RLGym](https://rlgym.org/), and the component model will be
 familiar if you have used it.
 
-<video src="https://github.com/user-attachments/assets/a7d81157-f03d-47d8-91f1-5a2bf6a597ef" controls autoplay loop muted playsinline></video>
+[<video src="https://github.com/user-attachments/assets/a7d81157-f03d-47d8-91f1-5a2bf6a597ef" controls autoplay loop muted playsinline></video>](https://github.com/user-attachments/assets/27544553-7e9a-4d42-8879-c73efd1a8125)
 
 ## Requirements
 * A Windows 10 or 11 PC
