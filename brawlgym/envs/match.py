@@ -11,6 +11,7 @@ import time
 from typing import Any, List, Optional, Sequence
 
 from ..utils.action_parsers import ActionParser, DefaultAction, mask_to_buttons
+from ..utils import common_values
 from ..utils.common_values import DEFAULT_MAP, NATIVE_FPS, UNCAPPED_RENDER_FPS
 from ..utils.gamestates import GameState
 from ..utils.obs_builders import DefaultObs, ObsBuilder
@@ -181,6 +182,7 @@ class Match:
         positions = [(int(round(x)), int(round(y)))
                      for x, y in self.state_setter.build_positions(n)]
         st = GameState(self._bridge.reset(positions))
+        st = self._reset_items(st, n)
         self._state = st
         self._prev_actions = None
         self._next_step_time = None
@@ -191,6 +193,60 @@ class Match:
         # no buttons pressed yet
         no_buttons = mask_to_buttons(0)
         return [self.obs_builder.build_obs(p, st, no_buttons) for p in st.players]
+
+    def give_item(self, fighter: int, name: str, force: bool = False) -> bool:
+        """
+        Give a fighter an item by name. Returns True if the fighter is now holding it, False if the game rejected it.
+        A legend can only use its own two weapons (PlayerData.weapons), so asking for another one
+        raises ValueError 
+        EXPERIMENTAL: force=True will override this and allow the item to be given regardless of legend, however this
+        may lead to unexpected/untested behavior when Brawlhalla tries to resolve signature attacks.
+        Gadgets are not restricted.
+        """
+        if not force and name in common_values.WEAPONS:
+            allowed = self._state.players[fighter].weapons if self._state else ()
+            if allowed and name not in allowed:
+                raise ValueError("%s cannot use a %s; it has %s (pass force=True to override)"
+                                 % (self._state.players[fighter].legend or "this legend", name,
+                                    " and ".join(allowed)))
+        self._bridge.give_item(int(fighter), name)
+        st = GameState(self._bridge.get_state())
+        self._state = st
+        return bool(st.players[fighter].held_item)
+
+    def clear_items(self) -> None:
+        """
+        Take every loose item off the stage and out of the fighters' hands.
+        """
+        self._bridge.disarm(-1)
+        self._bridge.clear_items()
+
+    def spawn_item(self, name: str, x: float, y: float) -> bool:
+        """
+        Put a loose item on the stage. The game caps how many weapons it keeps on stage and culls
+        the extras (see common_values.py for more information), so more than that many will not all survive.
+        """
+        return self._bridge.spawn_item(name, float(x), float(y))
+
+    def _reset_items(self, st: GameState, n: int) -> GameState:
+        """
+        Apply the state setter's item choices with the fighters already standing where it put them,
+        clear, hand out held items, then place the loose ones last so there is nothing lying around
+        for a fighter to accidentally pick up.
+        """
+        setter = self.state_setter
+        items = setter.build_items(n)
+        held = setter.build_held(n, [p.hero_id for p in st.players])
+        if not (setter.clear_items or items or any(held)):
+            return st
+        if setter.clear_items:
+            self.clear_items()
+        for i, name in enumerate(held[:n]):
+            if name and not self.give_item(i, name):
+                print("[brawlgym] fighter %d could not be given a %s" % (i, name), flush=True)
+        for name, x, y in items:
+            self.spawn_item(name, float(x), float(y))
+        return GameState(self._bridge.get_state())
 
     def _pace(self) -> None:
         """

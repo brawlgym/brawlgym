@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
+from .. import common_values
 from .player_data import PlayerData
 
 
@@ -13,10 +14,13 @@ class ItemData:
     A weapon/gadget item on the stage.
     """
 
-    __slots__ = ("item_id", "x", "y", "vx", "vy")
+    __slots__ = ("name", "is_crate", "is_weapon", "is_gadget", "x", "y", "vx", "vy")
 
     def __init__(self, it: Dict[str, Any]):
-        self.item_id: int = int(it.get("id", 0))
+        self.name: str = str(it.get("nm", ""))  # one of common_values.ITEM_TYPES
+        self.is_crate: bool = self.name == common_values.WEAPON_CRATE
+        self.is_weapon: bool = self.name in common_values.WEAPONS
+        self.is_gadget: bool = self.name in common_values.GADGETS
         self.x: float = float(it.get("x", 0.0))
         self.y: float = float(it.get("y", 0.0))
         self.vx: float = float(it.get("vx", 0.0))

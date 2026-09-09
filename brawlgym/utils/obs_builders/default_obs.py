@@ -2,6 +2,7 @@ import numpy as np
 from typing import Any, List
 
 from .. import common_values, math
+from ..legends import LEGEND_IDS, LEGEND_INDEX
 from ..gamestates import GameState, PlayerData
 from .obs_builder import ObsBuilder
 
@@ -15,21 +16,34 @@ class DefaultObs(ObsBuilder):
     stage itself is sensed with rays cast from the fighter: each ray reports how close the nearest
     hard (solid) and soft (drop-through) surface is, 1 = touching, 0 = nothing within range.
     Ground probes look straight down from fixed offsets either side of the fighter, so the
-    distance to the edge of the platform underfoot is read directly.
+    distance to the edge of the platform underfoot is read directly. Loose items get a fixed
+    number of slots, nearest first, sized from the game's spawn cap for the roster.
 
     Layout: [previous buttons, blast-edge distances, rays (hard), rays (soft), ground probes,
-             self, teammates (port order), opponents (port order)].
+             self, teammates (port order), opponents (port order), items (nearest first)].
     """
 
     GROUND_PROBE_OFFSETS = (-1000.0, -500.0, -250.0, -100.0, 100.0, 250.0, 500.0, 1000.0)
 
-    def __init__(self, n_rays: int = 16, ray_range: float = 2000.0,
+    LEGEND_IDS = LEGEND_IDS
+    ITEM_TYPES = common_values.ITEM_TYPES
+    HELD_TYPES = common_values.WEAPONS + common_values.GADGETS
+    ITEM_FEATURES = 5 + len(ITEM_TYPES)
+
+    def __init__(self, 
+                 n_rays: int = 16, 
+                 ray_range: float = 2000.0, 
+                 n_item_slots: int = None,
+                 legend_one_hot: bool = True,
                  pos_std: float = common_values.POS_STD,
                  vel_std: float = common_values.VEL_STD,
                  damage_std: float = common_values.DAMAGE_STD):
         """
         :param n_rays: Rays cast around the fighter to sense the stage.
         :param ray_range: Distance in px beyond which a ray reports nothing.
+        :param n_item_slots: Loose items observed, nearest first. None = the game's spawn cap for the
+                             roster size (common_values.max_items_on_stage), fixed at the first reset.
+        :param legend_one_hot: Include which legend each fighter is, one-hot over every playable one.
         :param pos_std: Position normalization coefficient for relative positions.
         :param vel_std: Velocity normalization coefficient.
         :param damage_std: Damage normalization coefficient.
@@ -37,6 +51,8 @@ class DefaultObs(ObsBuilder):
         super().__init__()
         self.n_rays = n_rays
         self.ray_range = float(ray_range)
+        self.n_item_slots = n_item_slots
+        self.legend_one_hot = legend_one_hot
         self.POS_STD = pos_std
         self.VEL_STD = vel_std
         self.DAMAGE_STD = damage_std
@@ -65,7 +81,8 @@ class DefaultObs(ObsBuilder):
             self._bounds = self._center = self._half = None
 
     def reset(self, initial_state: GameState):
-        pass
+        if self.n_item_slots is None:
+            self.n_item_slots = common_values.max_items_on_stage(len(initial_state.players))
 
     def build_obs(self, player: PlayerData, state: GameState, previous_action: np.ndarray) -> Any:
         obs = [np.asarray(previous_action, dtype=np.float32).reshape(-1),
@@ -98,6 +115,7 @@ class DefaultObs(ObsBuilder):
 
         obs.extend(allies)
         obs.extend(enemies)
+        obs.append(self._items(player, state))
         return np.concatenate(obs).astype(np.float32)
 
     def _add_player_to_obs(self, obs: List, player: PlayerData):
@@ -111,7 +129,21 @@ class DefaultObs(ObsBuilder):
              int(player.dodging),
              player.jumps_used / common_values.MAX_JUMPS,
              int(player.has_weapon),
-             int(player.dead)]])
+             int(player.dead)],
+            self._one_hot(player.held_item, self.HELD_TYPES)])
+        if self.legend_one_hot:
+            legend = np.zeros(len(self.LEGEND_IDS))
+            idx = LEGEND_INDEX.get(player.hero_id)
+            if idx is not None:
+                legend[idx] = 1.0
+            obs.append(legend)
+
+    @staticmethod
+    def _one_hot(name: str, names) -> np.ndarray:
+        out = np.zeros(len(names))
+        if name in names:
+            out[names.index(name)] = 1.0
+        return out
 
     def _position(self, player: PlayerData) -> np.ndarray:
         pos = np.array([player.x, player.y])
@@ -131,6 +163,22 @@ class DefaultObs(ObsBuilder):
     def _rays(self, player: PlayerData, segments: np.ndarray) -> np.ndarray:
         dist = math.raycast((player.x, player.y), self._ray_dirs, segments, self.ray_range)
         return np.clip(1.0 - dist / self.ray_range, 0.0, 1.0)
+
+    def _items(self, player: PlayerData, state: GameState) -> np.ndarray:
+        """
+        The nearest loose items, one slot each: [present, one-hot type, dx, dy, vx, vy]. Empty
+        slots are zeros.
+        """
+        if self.n_item_slots is None:
+            self.n_item_slots = common_values.max_items_on_stage(len(state.players))
+        out = np.zeros(self.n_item_slots * self.ITEM_FEATURES)
+        nearest = sorted(state.items, key=lambda it: (it.x - player.x) ** 2 + (it.y - player.y) ** 2)
+        for i, it in enumerate(nearest[:self.n_item_slots]):
+            out[i * self.ITEM_FEATURES:(i + 1) * self.ITEM_FEATURES] = np.concatenate([
+                [1.0], self._one_hot(it.name, self.ITEM_TYPES),
+                [(it.x - player.x) / self.POS_STD, (it.y - player.y) / self.POS_STD,
+                 it.vx / self.VEL_STD, it.vy / self.VEL_STD]])
+        return out
 
     def _ground_probes(self, player: PlayerData) -> np.ndarray:
         """

@@ -23,8 +23,31 @@ TEAM_1 = 1
 TEAM_2 = 2
 
 # fighters
-MAX_JUMPS = 3          # ground jump + air jumps before a fighter is out of recovery options
-NO_ITEM = -1           # PlayerData.held_item when nothing is held
+MAX_JUMPS = 3  # ground jump + air jumps before a fighter is out of recovery options
+NO_ITEM = ""   # PlayerData.held_item when nothing is held
+
+# TODO: I feel these are fairly self-explanatory for people who play the game, but maybe they should be in a separate file for clarity with display names
+WEAPON_CRATE = "WeaponCrate"  # an unclaimed weapon spawn; becomes the picker's weapon on pickup
+WEAPONS = ("Axe", "Boots", "Bow", "Cannon", "Chakram", "Fists", "Greatsword", "Hammer", "Katar", "Orb",
+           "Pistol", "RocketLance", "Scythe", "Spear", "Sword")
+GADGETS = ("BouncyBomb", "ProxMine", "SpikeBall", "SpawnBotFlyby", "BoomerangHoming", "StickyBomb", "BubbleBomb")
+ITEM_TYPES = (WEAPON_CRATE,) + WEAPONS + GADGETS
+
+# item spawning: https://brawlhalla.wiki.gg/wiki/Item_Spawning#When_Items_Spawn
+# the game keeps at most floor(MaxItemCountMultiplier * players + MaxItemCountFixed) items on stage,
+# tracked separately for weapons and gadgets. (multiplier, fixed) per Standard spawn-rate setting.
+WEAPON_SPAWN_CAPS = {"low": (1.0, 0), "medium": (1.0, 1), "high": (2.0, 0)}
+GADGET_SPAWN_CAPS = {"low": (0.5, 1), "medium": (1.0, 2), "high": (2.5, 0)}
+DEFAULT_SPAWN_RATE = "medium"
+
+
+def max_items_on_stage(n_players: int, rate: str = DEFAULT_SPAWN_RATE) -> int:
+    """
+    Most weapons plus gadgets that can be loose on the stage at once for this roster size.
+    """
+    weapons = int(WEAPON_SPAWN_CAPS[rate][0] * n_players + WEAPON_SPAWN_CAPS[rate][1])
+    gadgets = int(GADGET_SPAWN_CAPS[rate][0] * n_players + GADGET_SPAWN_CAPS[rate][1])
+    return weapons + gadgets
 
 # observation scales
 POS_STD = 2000.0       # px; roughly the width of a stage

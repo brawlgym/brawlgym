@@ -5,11 +5,12 @@ from __future__ import annotations
 
 import random
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 from ..common_values import GROUND_Y, STAGE_X_MAX, STAGE_X_MIN
 
 Position = Tuple[float, float]
+ItemSpawn = Tuple[str, float, float]
 
 
 class StateSetter(ABC):
@@ -41,6 +42,21 @@ class StateSetter(ABC):
         self.x_min = lo + margin
         self.x_max = hi - margin
 
+    # Clear every loose item off the stage and out of the fighters' hands at reset
+    clear_items: bool = False
+
     @abstractmethod
     def build_positions(self, n_players: int) -> List[Position]:
         """One (x, y) per fighter, port-ordered."""
+
+    def build_items(self, n_players: int) -> List[ItemSpawn]:
+        """
+        Items to put on the stage after the fighters are placed. Default: none.
+        """
+        return []
+
+    def build_held(self, n_players: int, heroes: Sequence[int]) -> List[Optional[str]]:
+        """
+        Item each fighter starts holding, port-ordered. Default: none.
+        """
+        return [None] * n_players

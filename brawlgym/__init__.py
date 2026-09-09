@@ -30,7 +30,7 @@ from .utils.action_parsers import ActionParser, DefaultAction, LookupAction
 from .utils.gamestates import GameState, ItemData, PlayerData
 from .utils.obs_builders import DefaultObs, ObsBuilder
 from .utils.reward_functions import CombinedReward, ComboReward, ConstantReward, DamageDealtReward,     DamageTakenPenalty, GroundedPenalty, KOReward, RewardFunction, TeamDamagePenalty, VelocityReward, WhiffPenalty
-from .utils.state_setters import DefaultStateSetter, RandomStateSetter, StateSetter
+from .utils.state_setters import ArmedStateSetter, DefaultStateSetter, RandomStateSetter, StateSetter
 from .utils.terminal_conditions import TeamWipeCondition, TerminalCondition, TimeoutCondition
 from .version import __version__
 

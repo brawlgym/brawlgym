@@ -9,6 +9,14 @@ release_notes = {
       DamageDealtReward and DamageTakenPenalty use the per-fighter totals, so damage is credited to
       the fighter who landed it.
     - The engine's light and heavy input bits were labelled backwards; LIGHT and HEAVY now match the game.
+    - Items: GameState.items and PlayerData.held_item report the game's item names, DefaultObs
+      one-hots them, Match.clear_items / spawn_item / give_item control what is on the stage and in
+      the fighters' hands, and state setters can declare the same through build_items / build_held
+      (see ArmedStateSetter, which can arm fighters at random by legend). give_item hands the item
+      over the way the game does on a pickup, so it is instant and works in mid-air; it refuses a
+      weapon the legend cannot use unless force=True.
+    - PlayerData reports hero_id, legend and weapons, and DefaultObs one-hots the legend. The full
+      legend table is in utils.legends (regenerate with brawlgym-core/demos/dump_legends.py).
     """,
     '0.1.1': """
     - Match takes a single game_speed (1 = real time, 2 = double, 0 = uncapped) in place of
