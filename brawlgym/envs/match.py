@@ -86,6 +86,7 @@ class Match:
         self._frame_period = 1.0 / (NATIVE_FPS * self.game_speed) if self.game_speed else 0.0
         self._next_frame_time: Optional[float] = None
 
+        self.port = int(port)
         self._bridge = brawlgym_core.HookBridge(host, port)
         self._state: Optional[GameState] = None
         self._prev_actions: Optional[Sequence[Any]] = None
@@ -122,8 +123,9 @@ class Match:
         The game must be launched and a match started. Returns the first observed state.
         """
         print("[brawlgym] waiting for the game ...", flush=True)
-        self._greet(timeout)
-        st = self._wait_for_match(timeout)
+        t_end = time.time() + timeout
+        self._greet(t_end)
+        st = self._wait_for_match(t_end)
         self._check_legends(st)
         self._bridge.configure(max(16, self.tick_skip * 2), 25.0)
         self._bridge.set_render_fps(UNCAPPED_RENDER_FPS if self.game_speed == 0 else NATIVE_FPS)
@@ -133,23 +135,23 @@ class Match:
         print("[brawlgym] match up: %d fighters, game speed %s" % (len(st.players), speed), flush=True)
         return st
 
-    def _greet(self, timeout: float) -> None:
+    def _greet(self, t_end: float) -> None:
         """
         Wait for the hook, then tell it what match to bring up.
         """
-        t_end = time.time() + timeout
         while True:
             self._bridge.wait_for_hook(max(1.0, t_end - time.time()))
             try:
+                self._bridge.get_state()
                 if self.legends:
                     self._bridge.set_legends(self.legends)
                 self._bridge.set_player_count(self.n_players)
                 return
-            except RuntimeError as e:
+            except Exception as e:
                 if time.time() >= t_end:
                     raise
-                print("[brawlgym] hook connection was already closed (%s) - waiting for it to "
-                      "reconnect ..." % e, flush=True)
+                print("[brawlgym] port %d: hook connection was already dead (%s) - waiting for it "
+                      "to reconnect ..." % (self.port, e), flush=True)
 
     def _check_legends(self, st: GameState) -> None:
         """
@@ -164,24 +166,23 @@ class Match:
                   "something started it before connect() could choose (launch_instances(players=...)?)"
                   % (wanted, got), flush=True)
 
-    def _wait_for_match(self, timeout: float) -> GameState:
+    def _wait_for_match(self, t_end: float) -> GameState:
         """
         Poll until fighters exist.
         """
-        t_end = time.time() + timeout
         while time.time() < t_end:
             try:
                 st = GameState(self._bridge.get_state())
                 players = st.players
                 if len(players) >= 2 and all(p.x > -5000 for p in players):
                     return st
-            except Exception:
-                try:
-                    self._bridge.wait_for_hook(30)
-                except Exception:
-                    pass
+            except Exception as e:
+                print("[brawlgym] port %d: lost the hook while waiting for the match (%s) - "
+                      "greeting it again" % (self.port, e), flush=True)
+                self._greet(t_end)
             time.sleep(1.0)
-        raise TimeoutError("no running match detected - start a match in the game")
+        raise TimeoutError("port %d: the game never started a match - it is still on the couch, so "
+                           "it never got the roster count" % self.port)
 
     def close(self) -> None:
         self._bridge.close()
