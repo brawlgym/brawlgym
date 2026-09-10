@@ -16,7 +16,7 @@ class PlayerData:
 
     __slots__ = ("port", "team", "player_id", "x", "y", "vx", "vy", "on_ground",
                  "facing_left", "damage", "dead", "state", "dodge_cooldown",
-                 "dodging", "jumps_used", "held_item", "has_weapon", "attacking", "stunned",
+                 "dodging", "jumps_used", "wall_side", "held_item", "has_weapon", "attacking", "stunned",
                  "hits_taken", "damage_dealt", "damage_taken", "hero_name", "hero_id", "raw")
 
     def __init__(self, f: Dict[str, Any]):
@@ -35,6 +35,7 @@ class PlayerData:
         self.dodge_cooldown: bool = int(f.get("dcd", 0)) == 1               # dodge is on cooldown
         self.dodging: bool = int(f.get("ddg", 0)) == 1                      # committed in a dodge
         self.jumps_used: int = int(f.get("tjmp", 0))                        # air jumps/recoveries since last grounded
+        self.wall_side: int = int(f.get("wall", 0))                         # 0 none, 1 wall on the right, 2 on the left
         self.held_item: str = str(f.get("hnm", common_values.NO_ITEM))      # weapon/gadget name, NO_ITEM if empty-handed
         self.has_weapon: bool = self.held_item in common_values.WEAPONS
         self.attacking: bool = int(f.get("atk", 0)) == 1                    # inside an attack animation
@@ -45,6 +46,15 @@ class PlayerData:
         self.hero_name: str = str(f.get("hero", ""))                        # the game's HeroName
         self.hero_id: int = hero_id_for(self.hero_name)                     # which legend this is
         self.raw: Dict[str, Any] = f                                        # full raw dict
+
+    @property
+    def on_wall(self) -> bool:
+        """
+        Clinging to a wall. Touching one restores the aerial jump/recovery budget the same
+        way the ground does, but jumps_used does NOT reset for a wall - so this is what
+        tells you the budget came back.
+        """
+        return self.wall_side != 0
 
     @property
     def legend(self) -> str:
