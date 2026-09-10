@@ -221,6 +221,13 @@ class Match:
         self._bridge.disarm(-1)
         self._bridge.clear_items()
 
+    def refresh_fighters(self) -> None:
+        """
+        Redraw every fighter and repick its moveset from what it is actually holding. Cheap and
+        idempotent; fixes a fighter left showing a weapon it no longer has.
+        """
+        self._bridge.refresh(-1)
+
     def spawn_item(self, name: str, x: float, y: float) -> bool:
         """
         Put a loose item on the stage. The game caps how many weapons it keeps on stage and culls
@@ -246,6 +253,8 @@ class Match:
                 print("[brawlgym] fighter %d could not be given a %s" % (i, name), flush=True)
         for name, x, y in items:
             self.spawn_item(name, float(x), float(y))
+        # redraw fighters
+        self.refresh_fighters()
         return GameState(self._bridge.get_state())
 
     def _pace_frame(self) -> None:
