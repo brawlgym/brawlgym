@@ -9,6 +9,9 @@ release_notes = {
       DamageDealtReward and DamageTakenPenalty use the per-fighter totals, so damage is credited to
       the fighter who landed it.
     - The engine's light and heavy input bits were labelled backwards; LIGHT and HEAVY now match the game.
+    - tick_skip defaults to 4
+    - DefaultObs carries the buttons from the last 4 decisions instead of just the last one
+    - LookupAction's default table now includes throw/pickup
     - Items: GameState.items and PlayerData.held_item report the game's item names, DefaultObs
       one-hots them, Match.clear_items / spawn_item / give_item control what is on the stage and in
       the fighters' hands, and state setters can declare the same through build_items / build_held

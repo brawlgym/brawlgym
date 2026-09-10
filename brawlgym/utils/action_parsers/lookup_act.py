@@ -9,7 +9,7 @@ from typing import Any, List, Optional, Sequence
 
 import numpy as np
 
-from ..common_values import DODGE, DOWN, HEAVY, JUMP, LEFT, LIGHT, RIGHT
+from ..common_values import DODGE, DOWN, HEAVY, JUMP, LEFT, LIGHT, RIGHT, THROW, UP
 from ..gamestates import GameState
 from .action_parser import ActionParser, mask_to_name
 
@@ -18,12 +18,11 @@ class LookupAction(ActionParser):
     """
     One discrete action per agent: an index into a table of input masks.
 
-    The default table covers movement, jumps, every unarmed attack direction and dodges.
-    Pass your own list of masks (combine the bits from action_parser) to change the set.
+    The default table covers all input permutations.
     """
 
     DEFAULT_TABLE = (
-        0,                  
+        0, # idle
         LEFT,
         RIGHT,
         JUMP,
@@ -33,14 +32,22 @@ class LookupAction(ActionParser):
         LEFT | LIGHT,
         RIGHT | LIGHT,
         DOWN | LIGHT,
+        UP | LIGHT,
         HEAVY,
         LEFT | HEAVY,
         RIGHT | HEAVY,
         DOWN | HEAVY,
+        UP | HEAVY,
         DODGE,
         LEFT | DODGE,
         RIGHT | DODGE,
         DOWN | DODGE,
+        UP | DODGE,
+        THROW,
+        LEFT | THROW,
+        RIGHT | THROW,
+        DOWN | THROW,
+        UP | THROW,
     )
 
     def __init__(self, table: Optional[Sequence[int]] = None):

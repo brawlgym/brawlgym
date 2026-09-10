@@ -1,5 +1,6 @@
 import numpy as np
-from typing import Any, List
+from collections import deque
+from typing import Any, Dict, List
 
 from .. import common_values, math
 from ..legends import LEGEND_IDS, LEGEND_INDEX
@@ -19,7 +20,7 @@ class DefaultObs(ObsBuilder):
     distance to the edge of the platform underfoot is read directly. Loose items get a fixed
     number of slots, nearest first, sized from the game's spawn cap for the roster.
 
-    Layout: [previous buttons, blast-edge distances, rays (hard), rays (soft), ground probes,
+    Layout: [recent actions, blast-edge distances, rays (hard), rays (soft), ground probes,
              self, teammates (port order), opponents (port order), items (nearest first)].
     """
 
@@ -35,6 +36,7 @@ class DefaultObs(ObsBuilder):
                  ray_range: float = 2000.0, 
                  n_item_slots: int = None,
                  legend_one_hot: bool = True,
+                 n_action_history: int = 4,
                  pos_std: float = common_values.POS_STD,
                  vel_std: float = common_values.VEL_STD,
                  damage_std: float = common_values.DAMAGE_STD):
@@ -53,6 +55,8 @@ class DefaultObs(ObsBuilder):
         self.ray_range = float(ray_range)
         self.n_item_slots = n_item_slots
         self.legend_one_hot = legend_one_hot
+        self.n_action_history = max(1, int(n_action_history))
+        self._actions: Dict[int, deque] = {}
         self.POS_STD = pos_std
         self.VEL_STD = vel_std
         self.DAMAGE_STD = damage_std
@@ -83,9 +87,24 @@ class DefaultObs(ObsBuilder):
     def reset(self, initial_state: GameState):
         if self.n_item_slots is None:
             self.n_item_slots = common_values.max_items_on_stage(len(initial_state.players))
+        self._actions = {p.port: self._blank_history() for p in initial_state.players}
+
+    def _blank_history(self) -> deque:
+        return deque([np.zeros(common_values.NUM_BUTTONS)] * self.n_action_history,
+                     maxlen=self.n_action_history)
+
+    def _recent_actions(self, player: PlayerData, previous_action) -> np.ndarray:
+        """
+        The buttons from the last n_action_history decisions for this fighter, oldest first.
+        """
+        history = self._actions.get(player.port)
+        if history is None:
+            history = self._actions.setdefault(player.port, self._blank_history())
+        history.append(np.asarray(previous_action, dtype=np.float32).reshape(-1))
+        return np.concatenate(history)
 
     def build_obs(self, player: PlayerData, state: GameState, previous_action: np.ndarray) -> Any:
-        obs = [np.asarray(previous_action, dtype=np.float32).reshape(-1),
+        obs = [self._recent_actions(player, previous_action),
                self._blast_distances(player),
                self._rays(player, self._hard),
                self._rays(player, self._soft),

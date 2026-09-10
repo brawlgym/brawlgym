@@ -36,7 +36,7 @@ class Match:
 
     def __init__(self,
                  game_speed: float = 0,  # 0: uncapped, 1: real time, >1: multiple of real time
-                 tick_skip: int = 8,
+                 tick_skip: int = 4,
                  n_players: int = 2,
                  map_name: Optional[str] = None,
                  legends: Optional[Sequence[Any]] = None,
@@ -85,9 +85,9 @@ class Match:
         # forced-step owed-time, chosen so exactly ONE 60fps frame runs per step (floor math
         # needs it in [16.7, 33.3)); it does not affect game speed.
 
-        # wall-clock period of one step for a capped speed; 0 = step as fast as the game answers
-        self._step_period = self.tick_skip / NATIVE_FPS / self.game_speed if self.game_speed else 0.0
-        self._next_step_time: Optional[float] = None
+        # wall-clock period of one sim frame at a capped speed; 0 = run as fast as the game answers
+        self._frame_period = 1.0 / (NATIVE_FPS * self.game_speed) if self.game_speed else 0.0
+        self._next_frame_time: Optional[float] = None
 
         self._bridge = brawlgym_core.HookBridge(host, port)
         self._state: Optional[GameState] = None
@@ -185,7 +185,7 @@ class Match:
         st = self._reset_items(st, n)
         self._state = st
         self._prev_actions = None
-        self._next_step_time = None
+        self._next_frame_time = None
         self.obs_builder.reset(st)
         self.reward_function.reset(st)
         for tc in self.terminal_conditions:
@@ -248,18 +248,17 @@ class Match:
             self.spawn_item(name, float(x), float(y))
         return GameState(self._bridge.get_state())
 
-    def _pace(self) -> None:
+    def _pace_frame(self) -> None:
         """
-        Hold the step schedule for a capped game_speed.
+        Hold the schedule for one sim frame at a capped game_speed.
         """
-        if not self._step_period:
+        if not self._frame_period:
             return
         now = time.perf_counter()
-        # (re)anchor the schedule at the first step and after any stall longer than a step
-        if self._next_step_time is None or now - self._next_step_time > self._step_period:
-            self._next_step_time = now
-        self._next_step_time += self._step_period
-        delay = self._next_step_time - now
+        if self._next_frame_time is None or now - self._next_frame_time > self._frame_period:
+            self._next_frame_time = now
+        self._next_frame_time += self._frame_period
+        delay = self._next_frame_time - now
         if delay > 0:
             time.sleep(delay)
 
@@ -271,9 +270,14 @@ class Match:
         functions receive each fighter's previous action as the buttons that were pressed
         (one 0/1 per BUTTON_BITS entry), whatever the action parser's own format.
         """
-        self._pace()
         masks = self.action_parser.parse_actions(actions, self._state)
-        st = GameState(self._bridge.step(masks, self.tick_skip))
+        if self._frame_period:
+            for _ in range(self.tick_skip):
+                self._pace_frame()
+                raw = self._bridge.step(masks, 1)
+        else:
+            raw = self._bridge.step(masks, self.tick_skip)
+        st = GameState(raw)
         self._state = st
         self._prev_actions = actions
         buttons = [mask_to_buttons(m) for m in masks]
