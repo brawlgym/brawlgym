@@ -7,12 +7,13 @@ Requires the `brawlgym_core` engine module and a running, injected game instance
 """
 from __future__ import annotations
 
+import os
 import time
 from typing import Any, List, Optional, Sequence
 
 from ..utils.action_parsers import ActionParser, DefaultAction, mask_to_buttons
 from ..utils import common_values
-from ..utils.common_values import DEFAULT_MAP, NATIVE_FPS, UNCAPPED_RENDER_FPS
+from ..utils.common_values import DEFAULT_MAP, MAP_ENV_VAR, NATIVE_FPS, UNCAPPED_RENDER_FPS
 from ..utils.gamestates import GameState
 from ..utils.obs_builders import DefaultObs, ObsBuilder
 from ..utils.reward_functions import CombinedReward, DamageDealtReward, DamageTakenPenalty, KOReward,     RewardFunction, WhiffPenalty
@@ -56,8 +57,8 @@ class Match:
         self.tick_skip = int(tick_skip)
         self.n_players = int(n_players)
         # A match cannot start without a locked map
-        # map_name=None uses small brawlhaven
-        self.map_name = map_name or DEFAULT_MAP
+        # map_name=None takes the map the launcher locked, else small brawlhaven
+        self.map_name = map_name or os.environ.get(MAP_ENV_VAR) or DEFAULT_MAP
         # per-slot legends (HeroIDs or names)
         # team 1: 0,2,4,6
         # team 2: 1,3,5,7
@@ -121,11 +122,7 @@ class Match:
         The game must be launched and a match started. Returns the first observed state.
         """
         print("[brawlgym] waiting for the game ...", flush=True)
-        self._bridge.wait_for_hook(timeout)
-        # roster size + legends for the auto-started match specified before the party forms
-        if self.legends:
-            self._bridge.set_legends(self.legends)
-        self._bridge.set_player_count(self.n_players)
+        self._greet(timeout)
         st = self._wait_for_match(timeout)
         self._check_legends(st)
         self._bridge.configure(max(16, self.tick_skip * 2), 25.0)
@@ -135,6 +132,24 @@ class Match:
         speed = "uncapped" if self.game_speed == 0 else "%gx" % self.game_speed
         print("[brawlgym] match up: %d fighters, game speed %s" % (len(st.players), speed), flush=True)
         return st
+
+    def _greet(self, timeout: float) -> None:
+        """
+        Wait for the hook, then tell it what match to bring up.
+        """
+        t_end = time.time() + timeout
+        while True:
+            self._bridge.wait_for_hook(max(1.0, t_end - time.time()))
+            try:
+                if self.legends:
+                    self._bridge.set_legends(self.legends)
+                self._bridge.set_player_count(self.n_players)
+                return
+            except RuntimeError as e:
+                if time.time() >= t_end:
+                    raise
+                print("[brawlgym] hook connection was already closed (%s) - waiting for it to "
+                      "reconnect ..." % e, flush=True)
 
     def _check_legends(self, st: GameState) -> None:
         """

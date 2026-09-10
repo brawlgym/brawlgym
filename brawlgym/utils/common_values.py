@@ -7,6 +7,7 @@ NATIVE_FPS = 60.0
 
 # every match needs a locked map to start
 DEFAULT_MAP = "SmallBrawlhaven"
+MAP_ENV_VAR = "BRAWLGYM_MAP"
 
 # render-frame rates: steps run between frames, so a low rate leaves the most room for them
 UNCAPPED_RENDER_FPS = 30.0
