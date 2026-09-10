@@ -15,6 +15,11 @@ class RewardFunction(ABC):
         Called once per episode with the post-reset state.
         """
 
+    def set_tick_skip(self, tick_skip: int) -> None:
+        """
+        Called once with the match tick_skip, for rewards that measure real time.
+        """
+
     @abstractmethod
     def get_reward(self, player: PlayerData, state: GameState, previous_action: Any) -> float:
         """

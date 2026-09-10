@@ -78,6 +78,7 @@ class Match:
         for comp in (self.obs_builder, self.state_setter):
             if hasattr(comp, "set_map_info"):
                 comp.set_map_info(self.map_info)
+        self.reward_function.set_tick_skip(self.tick_skip)
         # NOTE: the engine's internal `framems` stays at 25ms regardless of speed - it is the
         # forced-step owed-time, chosen so exactly ONE 60fps frame runs per step (floor math
         # needs it in [16.7, 33.3)); it does not affect game speed.

@@ -4,6 +4,7 @@ from .damage_taken_penalty import DamageTakenPenalty
 from .team_damage_penalty import TeamDamagePenalty
 from .ko_reward import KOReward
 from .whiff_penalty import WhiffPenalty
+from .throw_penalty import ThrowPenalty
 from .combo_reward import ComboReward
 from .velocity_reward import VelocityReward
 from .grounded_penalty import GroundedPenalty

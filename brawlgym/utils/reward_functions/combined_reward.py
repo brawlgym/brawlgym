@@ -48,6 +48,10 @@ class CombinedReward(RewardFunction):
         for func in self.reward_functions:
             func.reset(initial_state)
 
+    def set_tick_skip(self, tick_skip: int) -> None:
+        for func in self.reward_functions:
+            func.set_tick_skip(tick_skip)
+
     def get_reward(self, player: PlayerData, state: GameState, previous_action: np.ndarray) -> float:
         rewards = [func.get_reward(player, state, previous_action) for func in self.reward_functions]
         self.last_rewards[player.port] = rewards
