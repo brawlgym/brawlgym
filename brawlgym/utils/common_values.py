@@ -31,7 +31,7 @@ NO_ITEM = ""   # PlayerData.held_item when nothing is held
 WEAPON_CRATE = "WeaponCrate"  # an unclaimed weapon spawn; becomes the picker's weapon on pickup
 WEAPONS = ("Axe", "Boots", "Bow", "Cannon", "Chakram", "Fists", "Greatsword", "Hammer", "Katar", "Orb",
            "Pistol", "RocketLance", "Scythe", "Spear", "Sword")
-GADGETS = ("BouncyBomb", "ProxMine", "SpikeBall", "SpawnBotFlyby", "BoomerangHoming", "StickyBomb", "BubbleBomb")
+GADGETS = ("BouncyBomb", "ProxMine", "SpikeBall", "SpawnBotFlyby", "StickyBomb", "BubbleBomb") # TODO: "BoomerangHoming" not working
 ITEM_TYPES = (WEAPON_CRATE,) + WEAPONS + GADGETS
 
 # item spawning: https://brawlhalla.wiki.gg/wiki/Item_Spawning#When_Items_Spawn
