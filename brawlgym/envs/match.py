@@ -45,8 +45,6 @@ class Match:
                  obs_builder: Optional[ObsBuilder] = None,
                  action_parser: Optional[ActionParser] = None,
                  state_setter: Optional[StateSetter] = None,
-                 auto_minimize: bool = False,
-                 auto_mute: bool = False,
                  host: str = "127.0.0.1",
                  port: int = 8790):
         if brawlgym_core is None:
@@ -75,8 +73,6 @@ class Match:
         self.obs_builder = obs_builder or DefaultObs()
         self.action_parser = action_parser or DefaultAction()
         self.state_setter = state_setter or DefaultStateSetter()
-        self.auto_minimize = bool(auto_minimize)
-        self.auto_mute = bool(auto_mute)
         self.map_info = brawlgym_core.get_map_geometry(self.map_name)
         for comp in (self.obs_builder, self.state_setter):
             if hasattr(comp, "set_map_info"):
@@ -127,24 +123,31 @@ class Match:
         print("[brawlgym] waiting for the game ...", flush=True)
         self._bridge.wait_for_hook(timeout)
         # roster size + legends for the auto-started match specified before the party forms
-        self._bridge.set_player_count(self.n_players)
         if self.legends:
             self._bridge.set_legends(self.legends)
+        self._bridge.set_player_count(self.n_players)
         st = self._wait_for_match(timeout)
+        self._check_legends(st)
         self._bridge.configure(max(16, self.tick_skip * 2), 25.0)
         self._bridge.set_render_fps(UNCAPPED_RENDER_FPS if self.game_speed == 0 else NATIVE_FPS)
         self._bridge.set_sitout(True)           # deaths sit out until reset()
         self._state = st
         speed = "uncapped" if self.game_speed == 0 else "%gx" % self.game_speed
         print("[brawlgym] match up: %d fighters, game speed %s" % (len(st.players), speed), flush=True)
-        from ..gamelaunch import window         # matches by window title / process name (single instance)
-        if self.auto_minimize:
-            window.minimize_title("Brawlhalla")
-        if window.pycaw_available():
-            window.mute_name("Brawlhalla.exe", mute=self.auto_mute)
-        elif self.auto_mute:
-            print("[brawlgym] pycaw not installed - cannot mute (pip install pycaw)")
         return st
+
+    def _check_legends(self, st: GameState) -> None:
+        """
+        Warn when the match came up as legends other than the ones asked for.
+        """
+        if not self.legends:
+            return
+        wanted = [self.legends[min(i, len(self.legends) - 1)] for i in range(len(st.players))]
+        got = [p.hero_id for p in st.players]
+        if got != wanted:
+            print("[brawlgym] WARNING: asked for legends %s but the match came up as %s - "
+                  "something started it before connect() could choose (launch_instances(players=...)?)"
+                  % (wanted, got), flush=True)
 
     def _wait_for_match(self, timeout: float) -> GameState:
         """

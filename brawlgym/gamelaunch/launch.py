@@ -50,8 +50,6 @@ def find_brawlhalla_dir() -> Optional[str]:
 def _rendezvous_assign(target_port: int, timeout: float, players: Optional[int] = None) -> None:
     """
     Accept the just-booted hook on the rendezvous port, tell it its real port and wait for it to drop off cleanly
-
-    Sending setcount here at boot, before the party forms allows the match start with the right roster 
     """
     rv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     rv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -111,8 +109,14 @@ def launch_instances(n: int = 1,
     brawlgym_core.set_map(locked)
     print(f"[launch] map set to {locked}")
 
+    from . import window
+    have_pycaw = window.pycaw_available()
+    if auto_mute and not have_pycaw:
+        print("[launch] pycaw not installed - cannot mute (pip install pycaw)")
+
     ports: List[int] = []
     pids: List[int] = []
+    pending: List[int] = []
     for i in range(n):
         target = base_port + i
         pid = brawlgym_core.launch_instance(exe, launch_args, dll, game_dir)
@@ -126,37 +130,29 @@ def launch_instances(n: int = 1,
                 "may not have booted; check that the hook is injected and the game launched")
         ports.append(target)
         pids.append(pid)
+        pending += _apply_window_prefs([pid], auto_minimize, auto_mute, have_pycaw)
     print(f"[launch] {n} instance(s) up on ports {ports}")
 
-    _apply_window_prefs(pids, auto_minimize, auto_mute)
+    if pending:
+        pending = _apply_window_prefs(pending, auto_minimize, auto_mute, have_pycaw)
+    if pending:
+        print(f"[launch] no window/audio session yet for pid(s) {pending} - left as they are")
     return ports
 
 
-def _apply_window_prefs(pids, minimize, mute, timeout=180.0, gap=2.0):
+def _apply_window_prefs(pids, minimize, mute, have_pycaw) -> List[int]:
     """
     Minimize and ALWAYS set the mute state to mute for each game.
-
-    Windows and audio sessions appear some seconds after launch, so keep polling until every
-    instance has been handled or the timeout passes.
     """
     from . import window
-    import time
-    have_pycaw = window.pycaw_available()
-    if not have_pycaw and mute:
-        print("[launch] pycaw not installed - cannot mute (pip install pycaw)")
-    need_min = set(pids) if minimize else set()
-    need_mute = set(pids) if have_pycaw else set()   # when pycaw is present we always enforce the desired state
-    t_end = time.time() + timeout
-    while (need_min or need_mute) and time.time() < t_end:
-        for p in list(need_min):
-            if window.minimize_pids([p]):
-                need_min.discard(p)
-        for p in list(need_mute):
-            if window.mute_pids([p], mute=mute):     # session found -> state set
-                need_mute.discard(p)
-        if need_min or need_mute:
-            time.sleep(gap)
-    if minimize:
-        print(f"[launch] minimized {len(pids) - len(need_min)}/{len(pids)} instance window(s)")
-    if have_pycaw and mute:
-        print(f"[launch] muted {len(pids) - len(need_mute)}/{len(pids)} instance(s)")
+    pending = []
+    for pid in pids:
+        done = True
+        if minimize and not window.minimize_pids([pid]):
+            done = False
+        # with pycaw present the desired state is always enforced, mute or unmute
+        if have_pycaw and not window.mute_pids([pid], mute=mute):
+            done = False
+        if not done:
+            pending.append(pid)
+    return pending
