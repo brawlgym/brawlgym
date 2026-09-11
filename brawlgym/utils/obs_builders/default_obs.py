@@ -18,7 +18,8 @@ class DefaultObs(ObsBuilder):
     hard (solid) and soft (drop-through) surface is, 1 = touching, 0 = nothing within range.
     Ground probes look straight down from fixed offsets either side of the fighter, so the
     distance to the edge of the platform underfoot is read directly. Loose items get a fixed
-    number of slots, nearest first, sized from the game's spawn cap for the roster.
+    number of slots, nearest first, sized from the game's spawn cap for the roster. Each 
+    fighter block ends with which wall it is on and how much stamina it has spent.
 
     Layout: [recent actions, blast-edge distances, rays (hard), rays (soft), ground probes,
              self, teammates (port order), opponents (port order), items (nearest first)].
@@ -57,6 +58,9 @@ class DefaultObs(ObsBuilder):
         self.legend_one_hot = legend_one_hot
         self.n_action_history = max(1, int(n_action_history))
         self._actions: Dict[int, deque] = {}
+        self._stamina_state = None
+        self._stamina_base: Dict[int, int] = {}
+        self._stamina_used: Dict[int, int] = {}
         self.POS_STD = pos_std
         self.VEL_STD = vel_std
         self.DAMAGE_STD = damage_std
@@ -88,6 +92,22 @@ class DefaultObs(ObsBuilder):
         if self.n_item_slots is None:
             self.n_item_slots = common_values.max_items_on_stage(len(initial_state.players))
         self._actions = {p.port: self._blank_history() for p in initial_state.players}
+        self._stamina_state = None
+        self._stamina_base = {p.port: p.jumps_used for p in initial_state.players}
+        self._stamina_used = {p.port: 0 for p in initial_state.players}
+
+    def _update_stamina(self, state: GameState) -> None:
+        """
+        Stamina: aerial jumps/recoveries spent since the fighter last touched the ground OR a wall.
+        """
+        if state is self._stamina_state:
+            return
+        self._stamina_state = state
+        for p in state.players:
+            if p.on_ground or p.on_wall:
+                self._stamina_base[p.port] = p.jumps_used
+            base = self._stamina_base.setdefault(p.port, p.jumps_used)
+            self._stamina_used[p.port] = max(0, p.jumps_used - base)
 
     def _blank_history(self) -> deque:
         return deque([np.zeros(common_values.NUM_BUTTONS)] * self.n_action_history,
@@ -104,6 +124,7 @@ class DefaultObs(ObsBuilder):
         return np.concatenate(history)
 
     def build_obs(self, player: PlayerData, state: GameState, previous_action: np.ndarray) -> Any:
+        self._update_stamina(state)
         obs = [self._recent_actions(player, previous_action),
                self._blast_distances(player),
                self._rays(player, self._hard),
@@ -147,15 +168,28 @@ class DefaultObs(ObsBuilder):
              int(player.dodge_cooldown),
              int(player.dodging),
              player.jumps_used / common_values.MAX_JUMPS,
+             self._stamina_used.get(player.port, 0) / common_values.MAX_JUMPS,
              int(player.has_weapon),
              int(player.dead)],
-            self._one_hot(player.held_item, self.HELD_TYPES)])
+            self._one_hot(player.held_item, self.HELD_TYPES),
+            self._wall(player)])
         if self.legend_one_hot:
             legend = np.zeros(len(self.LEGEND_IDS))
             idx = LEGEND_INDEX.get(player.hero_id)
             if idx is not None:
                 legend[idx] = 1.0
             obs.append(legend)
+
+    @staticmethod
+    def _wall(player: PlayerData) -> np.ndarray:
+        """
+        Which wall the fighter is on, if any. 0 = none, 1 = right wall, 2 = left wall.
+        """
+        out = np.zeros(3) 
+        side = player.wall_side
+        if 0 <= side < 3:
+            out[side] = 1.0
+        return out
 
     @staticmethod
     def _one_hot(name: str, names) -> np.ndarray:

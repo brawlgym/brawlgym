@@ -50,9 +50,9 @@ class PlayerData:
     @property
     def on_wall(self) -> bool:
         """
-        Clinging to a wall. Touching one restores the aerial jump/recovery budget the same
+        Clinging to a wall. Touching one restores stamina (aerial jumps/recoveries) the same
         way the ground does, but jumps_used does NOT reset for a wall - so this is what
-        tells you the budget came back.
+        tells you the stamina came back.
         """
         return self.wall_side != 0
 

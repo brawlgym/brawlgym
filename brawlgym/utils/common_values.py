@@ -24,7 +24,7 @@ TEAM_1 = 1
 TEAM_2 = 2
 
 # fighters
-MAX_JUMPS = 3  # ground jump + air jumps before a fighter is out of recovery options
+MAX_JUMPS = 3  # aerial jumps/recoveries before a fighter is out of recovery options
 NO_ITEM = ""   # PlayerData.held_item when nothing is held
 
 # TODO: I feel these are fairly self-explanatory for people who play the game, but maybe they should be in a separate file for clarity with display names
