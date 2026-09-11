@@ -1,3 +1,3 @@
-rm -r dist build brawlgym.egg-info
-python -m build && twine check dist/* && twine upload dist/*
-rm -r dist build brawlgym.egg-info
+rm -r dist brawlgym.egg-info
+python -m && twine check dist/* && twine upload dist/*
+rm -r dist brawlgym.egg-info
