@@ -24,6 +24,7 @@ class WhiffPenalty(RewardFunction):
         self._attacks = AttackHistory(light_window_seconds)
         self._attacking: Dict[int, bool] = {}
         self._dealt_at_start: Dict[int, float] = {}
+        self._named: Dict[int, bool] = {}
 
     def set_tick_skip(self, tick_skip: int) -> None:
         self._attacks.set_tick_skip(tick_skip)
@@ -31,6 +32,7 @@ class WhiffPenalty(RewardFunction):
     def reset(self, initial_state: GameState) -> None:
         self._attacking = {p.port: p.attacking for p in initial_state.players}
         self._dealt_at_start = {p.port: p.damage_dealt for p in initial_state.players}
+        self._named = {p.port: False for p in initial_state.players}
         self._attacks.reset(initial_state)
 
     def get_reward(self, player: PlayerData, state: GameState, previous_action) -> float:
@@ -39,8 +41,10 @@ class WhiffPenalty(RewardFunction):
         r = 0.0
         if player.attacking and not was:
             self._dealt_at_start[player.port] = player.damage_dealt
+            self._named[player.port] = self._attacks.is_named_attack(player.port)
         elif was and not player.attacking:
-            if player.damage_dealt <= self._dealt_at_start.get(player.port, player.damage_dealt):
+            dealt_at_start = self._dealt_at_start.get(player.port, player.damage_dealt)
+            if self._named.get(player.port, False) and player.damage_dealt <= dealt_at_start:
                 r = -self.penalty
                 if self._attacks.is_heavy_without_light(player.port):
                     r *= self.heavy_without_light_scale

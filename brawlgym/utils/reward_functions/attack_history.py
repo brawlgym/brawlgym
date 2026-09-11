@@ -67,6 +67,7 @@ class AttackHistory:
         self._last_move: Dict[int, Optional[Move]] = {}
         self._repeat: Dict[int, bool] = {}
         self._cold_heavy: Dict[int, bool] = {}
+        self._named: Dict[int, bool] = {}
 
     def set_tick_skip(self, tick_skip: int) -> None:
         steps_per_second = NATIVE_FPS / max(1, int(tick_skip))
@@ -82,6 +83,7 @@ class AttackHistory:
         self._last_move = {port: None for port in ports}
         self._repeat = {port: False for port in ports}
         self._cold_heavy = {port: False for port in ports}
+        self._named = {port: False for port in ports}
 
     def update(self, player: PlayerData, previous_action: Any) -> None:
         """
@@ -114,11 +116,11 @@ class AttackHistory:
         fresh = self._pending_age.get(port, _INPUT_GRACE_STEPS + 1) <= _INPUT_GRACE_STEPS
         move = self._pending.get(port) if fresh else None
         if move is None:
-            # something swung that no recent input explains (a thrown item, a dodge attack) - it
-            # is not a move we can name, so it gets no grade either way
+            self._named[port] = False
             self._repeat[port] = False
             self._cold_heavy[port] = False
             return
+        self._named[port] = True
         self._repeat[port] = move == self._last_move.get(port)
         self._cold_heavy[port] = (move[1] == "heavy"
                                   and self._since_light.get(port, 0) > self._light_window_steps)
@@ -135,3 +137,9 @@ class AttackHistory:
         True when the current attack is a heavy that no light set up inside the window.
         """
         return self._cold_heavy.get(port, False)
+
+    def is_named_attack(self, port: int) -> bool:
+        """
+        True when the current attack was started by a light or heavy input.
+        """
+        return self._named.get(port, False)
