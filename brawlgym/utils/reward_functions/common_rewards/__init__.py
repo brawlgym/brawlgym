@@ -8,3 +8,4 @@ from .throw_penalty import ThrowPenalty
 from .combo_reward import ComboReward
 from .velocity_reward import VelocityReward
 from .grounded_penalty import GroundedPenalty
+from .timeout_penalty import TimeoutPenalty

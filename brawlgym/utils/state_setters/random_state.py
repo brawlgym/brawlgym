@@ -19,28 +19,32 @@ class RandomStateSetter(StateSetter):
 
     MAX_TRIES = 200
 
-    def __init__(self, allow_air: bool = False, anywhere: bool = False, min_gap: float = 200.0,
-                 rng: Optional[random.Random] = None):
+    def __init__(self, allow_air: bool = False, anywhere: bool = False, below_stage: bool = True,
+                 min_gap: float = 200.0, rng: Optional[random.Random] = None):
         """
         :param allow_air: Half the spawns are put in the air over the stage instead of on it.
         :param anywhere: Spawn uniformly anywhere inside the blast bounds - over the stage, off
                          the side, under it - skipping only points inside solid geometry. Takes
                          precedence over allow_air, and needs map geometry: without it the
                          fighters spawn on the ground as usual.
+        :param below_stage: Allow spawns lower than the bottom of the stage.
         :param min_gap: Keep fighters this far apart, along x on the ground and as a straight
                         line distance when spawning anywhere.
         """
         self.allow_air = allow_air
         self.anywhere = anywhere
+        self.below_stage = below_stage
         self.min_gap = min_gap
         self.rng = rng or random.Random()
         self._hard = np.zeros((0, 2, 2))
         self._blast = None
+        self._floor_y = None
 
     def set_map_info(self, map_info) -> None:
         super().set_map_info(map_info)
         map_info = map_info or {}
         self._hard = np.asarray(map_info.get("hard") or [], dtype=np.float64).reshape(-1, 2, 2)
+        self._floor_y = float(self._hard[:, :, 1].max()) if len(self._hard) else None
         bounds = map_info.get("bounds")
         if bounds:
             x, y, w, h = bounds["X"], bounds["Y"], bounds["W"], bounds["H"]
@@ -77,6 +81,8 @@ class RandomStateSetter(StateSetter):
             spawn = None
             for _attempt in range(self.MAX_TRIES):
                 pos = (self.rng.uniform(x0, x1), self.rng.uniform(y0, y1))
+                if not self.below_stage and self._floor_y is not None and pos[1] > self._floor_y:
+                    continue
                 if self._in_solid(pos) or not self._clears(pos, out):
                     continue
                 spawn = pos
