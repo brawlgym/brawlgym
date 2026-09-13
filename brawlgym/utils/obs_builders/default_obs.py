@@ -167,6 +167,8 @@ class DefaultObs(ObsBuilder):
              player.damage / self.DAMAGE_STD,
              int(player.dodge_cooldown),
              int(player.dodging),
+             int(player.attacking),
+             int(player.stunned),
              player.jumps_used / common_values.MAX_JUMPS,
              self._stamina_used.get(player.port, 0) / common_values.MAX_JUMPS,
              int(player.has_weapon),
