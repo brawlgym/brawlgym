@@ -58,3 +58,16 @@ DAMAGE_STD = 300.0     # damage points; fighters die well before this
 # SmallBrawlhaven reference values, the fallback when no map geometry is available
 GROUND_Y = 1849.0
 STAGE_X_MIN, STAGE_X_MAX = 600.0, 2150.0
+
+# Bot difficulty
+BOT_OFF = 1
+BOT_PUSHOVER = 3
+BOT_EASY = 4
+BOT_MEDIUM = 5
+BOT_HARD = 6
+BOT_EXTREME = 7
+BOT_CHOSEN = 8
+BOT_LEVELS = (BOT_PUSHOVER, BOT_EASY, BOT_MEDIUM, BOT_HARD, BOT_EXTREME, BOT_CHOSEN)
+BOT_LEVEL_NAMES = {BOT_OFF: "off", BOT_PUSHOVER: "pushover", BOT_EASY: "easy",
+                   BOT_MEDIUM: "medium", BOT_HARD: "hard", BOT_EXTREME: "extreme",
+                   BOT_CHOSEN: "chosen"}

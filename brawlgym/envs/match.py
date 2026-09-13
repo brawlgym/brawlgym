@@ -255,6 +255,17 @@ class Match:
         """
         return self._bridge.spawn_item(name, float(x), float(y))
 
+    def set_bot(self, fighter: int, difficulty: int) -> None:
+        """
+        Hand a fighter to the game's own AI, or take it back.
+
+        Levels are the game's own, in common_values: BOT_PUSHOVER through BOT_CHOSEN, and BOT_OFF
+        to give the fighter back to whatever is supplying its actions. -1 as the fighter applies to
+        everyone. Takes effect on the next step and holds until changed; nothing is respawned and
+        the match is not interrupted.
+        """
+        self._bridge.set_bot(int(fighter), int(difficulty))
+
     def _reset_items(self, st: GameState, n: int) -> GameState:
         """
         Apply the state setter's item choices with the fighters already standing where it put them,
