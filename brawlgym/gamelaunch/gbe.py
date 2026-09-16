@@ -13,7 +13,9 @@ import urllib.request
 
 APPID = 291550
 REPO = "Detanup01/gbe_fork"
-ASSET_NAME = "emu-win-release.7z"
+# gbe_fork splits its Windows build by toolchain. Prefer the VS2022 build: its redistributable is
+# the one already present on most machines. The unsuffixed name is what older releases shipped.
+ASSET_CANDIDATES = ("emu-win-release-vs22.7z", "emu-win-release-vs26.7z", "emu-win-release.7z")
 VERSION_FILE = "brawlgym_gbe.json"      # in the game folder: {"tag":..., "sha256":...}
 
 OFFLINE_INI = ("[main::connectivity]\n"
@@ -31,11 +33,13 @@ def _latest_release() -> dict:
                                                "User-Agent": "brawlgym"})
     with urllib.request.urlopen(req, timeout=30) as r:
         data = json.load(r)
-    asset = next((a for a in data.get("assets", []) if a.get("name") == ASSET_NAME), None)
-    if asset is None:
-        names = ", ".join(a.get("name", "?") for a in data.get("assets", []))
-        raise RuntimeError(f"'{ASSET_NAME}' not found in latest {REPO} release (assets: {names})")
-    return {"tag": data["tag_name"], "url": asset["browser_download_url"]}
+    assets = {a.get("name"): a for a in data.get("assets", [])}
+    for name in ASSET_CANDIDATES:
+        if name in assets:
+            return {"tag": data["tag_name"], "asset": name,
+                    "url": assets[name]["browser_download_url"]}
+    raise RuntimeError(f"no known Windows emulator asset in latest {REPO} release (looked for "
+                       f"{', '.join(ASSET_CANDIDATES)}; found: {', '.join(assets) or 'none'})")
 
 
 def _is_x64_steam_api(name: str) -> bool:
@@ -60,7 +64,7 @@ def _fetch_dll(rel: dict) -> bytes:
     Download the .7z into memory and return steam_api64.dll's bytes (extracted in memory).
     """
     from . import _sevenzip
-    print(f"[gbe] fetching {rel['tag']} ({ASSET_NAME}) to memory ...")
+    print(f"[gbe] fetching {rel['tag']} ({rel['asset']}) to memory ...")
     req = urllib.request.Request(rel["url"], headers={"User-Agent": "brawlgym"})
     with urllib.request.urlopen(req, timeout=120) as r:
         blob = r.read()
