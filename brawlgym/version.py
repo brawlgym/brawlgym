@@ -1,6 +1,9 @@
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 release_notes = {
+    '0.1.3': """
+    - patcher fixes
+    """,
     '0.1.2': """
     - PlayerData gains attacking, stunned, hits_taken, damage_dealt and damage_taken, read from the
       game's own fighter flags and running totals.
