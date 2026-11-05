@@ -11,9 +11,10 @@ import hashlib
 import os
 import shutil
 import urllib.error
-import urllib.request
 import zlib
 from typing import Optional
+
+from .utils import net
 
 PATCH_REPO = "brawlgym/brawlgym-patches"
 TAG_PREFIX = "build-"      # release tag is TAG_PREFIX + the first 12 hex of the sha
@@ -203,12 +204,13 @@ def _remote_changed(sha: str, cached: str):
     the new release will have a different size or etag.
     """
     try:
-        req = urllib.request.Request(patch_url(sha), method="HEAD", headers={"User-Agent": "brawlgym"})
-        with urllib.request.urlopen(req, timeout=15) as r:
-            size = r.headers.get("Content-Length")
-            etag = r.headers.get("ETag", "")
-    except Exception:
-        return False, "offline"
+        headers, _ = net.fetch(patch_url(sha), head=True, timeout=15)
+    except Exception as e:
+        print(f"[patch] WARNING: could not check for an updated {sha[:12]}.bgpatch ({e}); "
+              "using the cached copy, which may be out of date. Pass refresh=True to force a download.")
+        return False, "unreachable"
+    size = headers.get("content-length")
+    etag = headers.get("etag", "")
     if size and int(size) != os.path.getsize(cached):
         return True, f"size {os.path.getsize(cached)} -> {size}"
     try:
@@ -232,12 +234,10 @@ def fetch_patch(sha: str, refresh: bool = False) -> str:
             return dst
         print(f"[patch] cached {sha[:12]}.bgpatch is stale ({why}) - refetching")
 
-    req = urllib.request.Request(patch_url(sha), headers={"User-Agent": "brawlgym"})
     print(f"[patch] fetching {sha[:12]}.bgpatch ...")
     try:
-        with urllib.request.urlopen(req, timeout=60) as r:
-            blob = r.read()
-            etag = r.headers.get("ETag", "")
+        headers, blob = net.fetch(patch_url(sha))
+        etag = headers.get("etag", "")
     except urllib.error.HTTPError as e:
         if e.code == 404:
             raise RuntimeError(

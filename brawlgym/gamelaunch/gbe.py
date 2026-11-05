@@ -9,7 +9,8 @@ import hashlib
 import json
 import os
 import shutil
-import urllib.request
+
+from ..utils import net
 
 APPID = 291550
 REPO = "Detanup01/gbe_fork"
@@ -29,10 +30,8 @@ def _latest_release() -> dict:
     Query the GitHub API for the latest gbe_fork release (tag + asset download URL).
     """
     url = f"https://api.github.com/repos/{REPO}/releases/latest"
-    req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json",
-                                               "User-Agent": "brawlgym"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        data = json.load(r)
+    _h, body = net.fetch(url, timeout=30, headers={"Accept": "application/vnd.github+json"})
+    data = json.loads(body)
     assets = {a.get("name"): a for a in data.get("assets", [])}
     for name in ASSET_CANDIDATES:
         if name in assets:
@@ -65,9 +64,7 @@ def _fetch_dll(rel: dict) -> bytes:
     """
     from . import _sevenzip
     print(f"[gbe] fetching {rel['tag']} ({rel['asset']}) to memory ...")
-    req = urllib.request.Request(rel["url"], headers={"User-Agent": "brawlgym"})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        blob = r.read()
+    _h, blob = net.fetch(rel["url"], timeout=120)
     print("[gbe] extracting steam_api64.dll in memory ...")
     return _sevenzip.extract_member(blob, _is_x64_steam_api)
 
