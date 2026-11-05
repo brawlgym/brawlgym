@@ -1,6 +1,9 @@
-__version__ = '0.1.3'
+__version__ = '0.1.4'
 
 release_notes = {
+    '0.1.4': """
+    - patcher and gbe fetching fixes
+    """,
     '0.1.3': """
     - patcher fixes
     """,
